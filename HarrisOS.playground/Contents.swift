@@ -18,15 +18,24 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         sceneView.delegate = self
         sceneView.scene = self
         
-        //        sceneView.autoenablesDefaultLighting = true
         sceneView.allowsCameraControl = true
+        self.background.contents = NSColor.black
         
         let camera = SCNCamera()
         camera.zFar = 1000
         camera.zNear = 0.1
+        camera.bloomBlurRadius = 15
+        camera.fStop = 0.1
+        camera.apertureBladeCount = 5
+        camera.focalLength = 18
+        camera.focusDistance = 5
+        camera.wantsDepthOfField = true
+        camera.wantsHDR = true
+
+        
         let cameraNode = SCNNode()
         cameraNode.camera = camera
-        cameraNode.position = SCNVector3(0, 2, 1)
+        cameraNode.position = SCNVector3(19, 2, 19)
         self.rootNode.addChildNode(cameraNode)
         
         //lighting
@@ -38,27 +47,31 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         //floor
         let floorGeometry = SCNFloor()
         let floorNode = SCNNode(geometry: floorGeometry)
+        floorNode.position = SCNVector3(0, -0.51, 0)
+        
+        //floor material
         floorGeometry.reflectivity = 0
         let material = floorGeometry.firstMaterial
         material?.lightingModel = .physicallyBased
-        material?.diffuse.contents = NSColor(deviceRed: 50/255, green: 50/255, blue: 50/255, alpha: 1)
-        material?.roughness.contents = NSColor(deviceRed: 200/255, green: 200/255, blue: 200/255, alpha: 1)
-        material?.metalness.contents = NSColor(deviceRed: 25/255, green: 25/255, blue: 25/255, alpha: 1)
-        floorNode.position = SCNVector3(0, -0.51, 0)
+        
+        material?.diffuse.contents = NSColor(white: 0.02, alpha: 1)
+        material?.roughness.contents = NSColor(white: 0.4, alpha: 1)
+        material?.metalness.contents = NSColor(white: 0.8, alpha: 1)
+        
         self.rootNode.addChildNode(floorNode)
         
         //create & add charachters to scene (where no other charachters exist)
-        for x in 0...5 {
-            var randomX = Int.random(in: 0...9)
-            var randomZ = Int.random(in: 0...9)
+        for x in 0...99 {
+            var randomX = Int.random(in: 0...19)
+            var randomZ = Int.random(in: 0...19)
             
             for charachter in charachters {
                 while Int(exactly: charachter.node.position.x) == randomX {
-                    randomX = Int.random(in: 0...9)
+                    randomX = Int.random(in: 0...19)
                 }
                 
                 while Int(exactly: charachter.node.position.z) == randomZ {
-                    randomZ = Int.random(in: 0...9)
+                    randomZ = Int.random(in: 0...19)
                 }
             }
             
@@ -68,17 +81,17 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         }
     }
     
-    func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
-        guard let updateTime = self.updateTime, let timeTillNextUpdate = TimeInterval(exactly: 2) else { return }
-        //runs every 2 seconds
-        if time >= updateTime {
-            self.updateTime = time + timeTillNextUpdate
-
-            for charachter in charachters {
-                charachter.calculateEmotionLevel()
-            }
-        }
-    }
+//    func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
+//        guard let updateTime = self.updateTime, let timeTillNextUpdate = TimeInterval(exactly: 2) else { return }
+//        //runs every 2 seconds
+//        if time >= updateTime {
+//            self.updateTime = time + timeTillNextUpdate
+//
+//            for charachter in charachters {
+//                charachter.calculateEmotionLevel()
+//            }
+//        }
+//    }
     
     //idk what this is
     required init?(coder aDecoder: NSCoder) {
@@ -101,31 +114,33 @@ class HarrisCharachter {
         let geometry = SCNBox(width: 1, height: 1, length: 1, chamferRadius: 0.2)
         let material = geometry.firstMaterial
         material?.lightingModel = .physicallyBased
-
-        material?.transparency = 0.85
-        material?.fresnelExponent = 0.2
-        material?.isDoubleSided = true
-        material?.transparencyMode = .dualLayer
-//        material?.specular.contents = NSColor(deviceRed: 60/255, green: 60/255, blue: 60/255, alpha: 1)
-        material?.metalness.contents = NSColor(deviceRed: 100/255, green: 100/255, blue: 100/255, alpha: 1)
-        material?.diffuse.contents = NSColor(deviceRed: 50/255, green: 50/255, blue: 50/255, alpha: 1)
-        material?.roughness.contents = NSColor(deviceRed: 100/255, green: 100/255, blue: 100/255, alpha: 1)
-        node = SCNNode(geometry: geometry)
-        node.position = position
         
-        //inside light
-        let light = SCNLight()
-        light.intensity = 100
         let random1 = CGFloat.random(in: 0...255)
         let random2 = CGFloat.random(in: 0...255)
         let random3 = CGFloat.random(in: 0...255)
+        
+//        material?.transparency = 0.8
+//        material?.fresnelExponent = 3.2
+//        material?.isDoubleSided = true
+//        material?.transparencyMode = .dualLayer
+//        material?.metalness.contents = NSColor(white: 0.5, alpha: 1)
+
+        material?.diffuse.contents = NSColor(deviceRed: random1/255, green: random2/255, blue: random3/255, alpha: 1)
+        material?.roughness.contents = NSColor(white: 0.3, alpha: 1)
+        node = SCNNode(geometry: geometry)
+        node.position = position
+        
+//        inside light
+        let light = SCNLight()
+        light.intensity = 5
+        light.attenuationEndDistance = 4
         light.color = NSColor(deviceRed: random1/255, green: random2/255, blue: random3/255, alpha: 1)
         light.type = SCNLight.LightType.omni
-        
+
         lightNode = SCNNode()
         lightNode.light = light
         lightNode.position = node.position
-        lightNode.position.y += 0.5
+        lightNode.position.y += 0.01
     }
     
     func changeColorTo(color: NSColor) {
