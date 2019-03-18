@@ -32,7 +32,7 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         camera.apertureBladeCount = 5
         camera.focalLength = 24
         camera.focusDistance = 6
-//        camera.wantsDepthOfField = true
+        camera.wantsDepthOfField = true
         camera.wantsHDR = true
         
         
@@ -59,8 +59,12 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         
         material?.diffuse.contents = NSColor(white: 0.02, alpha: 1)
         
-        material?.roughness.contents = NSColor(white: 0.4, alpha: 1)
+//        material?.roughness.contents = NSColor(white: 0.4, alpha: 1)
         material?.metalness.contents = NSColor(white: 0.8, alpha: 1)
+        material?.roughness.contents = NSImage(imageLiteralResourceName: "grid.png")
+        material?.roughness.wrapT = .mirror
+        material?.roughness.wrapS = .mirror
+        material?.roughness.contentsTransform = SCNMatrix4MakeScale(100, 100, 1)
         
         self.rootNode.addChildNode(floorNode)
         
@@ -136,22 +140,22 @@ class HarrisCharachter {
         
         let geometry = SCNBox(width: 0.99, height: 0.99, length: 0.99, chamferRadius: 0.33)
         
-        
-        
-//        cube material
+        //cube material
         if let firstMaterial = geometry.firstMaterial {
-//            firstMaterial.diffuse.contents = NSColor(white: 0.65, alpha: 1)
             firstMaterial.lightingModel = .physicallyBased
+            
+            
+            
             firstMaterial.diffuse.contents = NSColor(red: 0.2, green: 0.3, blue: 0.8, alpha: 1)
+            
+            firstMaterial.transparency = 0.8
+            firstMaterial.fresnelExponent = 3.2
+            firstMaterial.transparencyMode = .dualLayer
+            firstMaterial.isDoubleSided = true
+            
+            
             firstMaterial.metalness.contents = NSColor(white: 0.65, alpha: 1)
-            firstMaterial.roughness.contents = NSColor(white: 0.3, alpha: 1)
-            firstMaterial.normal.contents = NSImage(imageLiteralResourceName: "bumps.png")
-//            firstMaterial.normal.wrapT = .mirror
-//            firstMaterial.normal.wrapS = .mirror
-//            firstM?aterial.isDoubleSided = true
-//
-
-
+            firstMaterial.roughness.contents = NSImage(imageLiteralResourceName: "normal.png")
         }
         
         node = SCNNode(geometry: geometry)
@@ -159,7 +163,7 @@ class HarrisCharachter {
         
         
         //inside light
-        light.intensity = 5
+        light.intensity = 10
         light.attenuationEndDistance = 4
         
         light.type = SCNLight.LightType.omni
