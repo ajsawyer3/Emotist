@@ -26,12 +26,11 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         self.background.contents = NSColor.black
         
         let camera = SCNCamera()
-        camera.zFar = 1000
-        camera.zNear = 0.1
-        camera.fStop = 0.03
-        camera.apertureBladeCount = 5
+        camera.automaticallyAdjustsZRange = true
+        camera.fStop = 1.6
+//        camera.apertureBladeCount = 5
         camera.focalLength = 24
-        camera.focusDistance = 6
+        camera.focusDistance = 10
         camera.wantsDepthOfField = true
         camera.wantsHDR = true
         
@@ -69,17 +68,17 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         self.rootNode.addChildNode(floorNode)
         
         //create & add charachters to scene (where no other charachters exist)
-        for x in 0...20 {
-            var randomX = Int.random(in: 0...8)
-            var randomZ = Int.random(in: 0...8)
+        for x in 0...99 {
+            var randomX = Int.random(in: 0...12)
+            var randomZ = Int.random(in: 0...12)
             
             for charachter in charachters {
                 while Int(exactly: charachter.node.position.x) == randomX {
-                    randomX = Int.random(in: 0...8)
+                    randomX = Int.random(in: 0...20)
                 }
                 
                 while Int(exactly: charachter.node.position.z) == randomZ {
-                    randomZ = Int.random(in: 0...8)
+                    randomZ = Int.random(in: 0...20)
                 }
             }
             
@@ -87,18 +86,11 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
             self.rootNode.addChildNode(charachters[x].node)
             self.rootNode.addChildNode(charachters[x].lightNode)
             
-            
+            let random1 = CGFloat.random(in: 0...255)
+            let random2 = CGFloat.random(in: 0...255)
+            let random3 = CGFloat.random(in: 0...255)
+            self.charachters[x].changeColorTo(NSColor(red: random1/255, green: random2/255, blue: random3/255, alpha: 1))
         }
-        
-//        DispatchQueue.main.asyncAfter(deadline: .now()+2.0) {
-            for x in 0...20 {
-                let random1 = CGFloat.random(in: 0...255)
-                let random2 = CGFloat.random(in: 0...255)
-                let random3 = CGFloat.random(in: 0...255)
-                self.charachters[x].changeColorTo(NSColor(red: random1/255, green: random2/255, blue: random3/255, alpha: 1))
-            }
-//        }
-        
         
     }
     //    func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
@@ -125,12 +117,6 @@ class HarrisCharachter {
     
     var emotionLevel: Double
     
-//    var color: NSColor {
-//        didSet {
-//            node.geometry?.firstMaterial?.diffuse.contents = color
-//        }
-//    }
-    
     //    @objc private var material: SCNMaterial
     private let light = SCNLight()
     
@@ -138,23 +124,15 @@ class HarrisCharachter {
         //emotion levels key: -1 = sad, +1 = happy
         emotionLevel = 0
         
-        let geometry = SCNBox(width: 0.99, height: 0.99, length: 0.99, chamferRadius: 0.33)
+        let geometry = SCNBox(width: 0.99, height: 0.99, length: 0.99, chamferRadius: 0.26)
         
         //cube material
         if let firstMaterial = geometry.firstMaterial {
             firstMaterial.lightingModel = .physicallyBased
             
-            
-            
             firstMaterial.diffuse.contents = NSColor(red: 0.2, green: 0.3, blue: 0.8, alpha: 1)
             
-            firstMaterial.transparency = 0.8
-            firstMaterial.fresnelExponent = 3.2
-            firstMaterial.transparencyMode = .dualLayer
-            firstMaterial.isDoubleSided = true
-            
-            
-            firstMaterial.metalness.contents = NSColor(white: 0.65, alpha: 1)
+            firstMaterial.metalness.contents = NSColor(white: 0.8, alpha: 1)
             firstMaterial.roughness.contents = NSImage(imageLiteralResourceName: "normal.png")
         }
         
