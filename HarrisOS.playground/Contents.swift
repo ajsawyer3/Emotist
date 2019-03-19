@@ -22,30 +22,7 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         
         sceneView.showsStatistics = true
         
-        sceneView.allowsCameraControl = true
-        self.background.contents = NSColor.black
-        
-        let camera = SCNCamera()
-        camera.automaticallyAdjustsZRange = true
-        camera.fStop = 1.6
-//        camera.apertureBladeCount = 5
-        camera.focalLength = 24
-        camera.focusDistance = 10
-        camera.wantsDepthOfField = true
-        camera.wantsHDR = true
-        
-        
-        let cameraNode = SCNNode()
-        cameraNode.camera = camera
-        cameraNode.position = SCNVector3(0, 0, 0)
-        self.rootNode.addChildNode(cameraNode)
-        
-        //lighting
-        let environment = NSImage(named: "hdri.jpg")
-        self.lightingEnvironment.contents = environment
-        self.lightingEnvironment.intensity = 2.0
-        
-        
+        //GEOMETRY
         //floor
         let floorGeometry = SCNFloor()
         let floorNode = SCNNode(geometry: floorGeometry)
@@ -58,7 +35,7 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         
         material?.diffuse.contents = NSColor(white: 0.02, alpha: 1)
         
-//        material?.roughness.contents = NSColor(white: 0.4, alpha: 1)
+        //        material?.roughness.contents = NSColor(white: 0.4, alpha: 1)
         material?.metalness.contents = NSColor(white: 0.8, alpha: 1)
         material?.roughness.contents = NSImage(imageLiteralResourceName: "grid.png")
         material?.roughness.wrapT = .mirror
@@ -68,17 +45,19 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         self.rootNode.addChildNode(floorNode)
         
         //create & add charachters to scene (where no other charachters exist)
-        for x in 0...99 {
-            var randomX = Int.random(in: 0...12)
-            var randomZ = Int.random(in: 0...12)
+        let charachterCount = 19
+        for x in 0...charachterCount {
+            let fieldSize = charachterCount/4
+            var randomX = Int.random(in: 0...fieldSize)
+            var randomZ = Int.random(in: 0...fieldSize)
             
             for charachter in charachters {
                 while Int(exactly: charachter.node.position.x) == randomX {
-                    randomX = Int.random(in: 0...20)
+                    randomX = Int.random(in: 0...fieldSize)
                 }
                 
                 while Int(exactly: charachter.node.position.z) == randomZ {
-                    randomZ = Int.random(in: 0...20)
+                    randomZ = Int.random(in: 0...fieldSize)
                 }
             }
             
@@ -92,6 +71,64 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
             self.charachters[x].changeColorTo(NSColor(red: random1/255, green: random2/255, blue: random3/255, alpha: 1))
         }
         
+        let userCharachter = charachters[0].node
+        
+        //CAMERA & LIGHTING
+        let cameraNode = createCameraNode(following: userCharachter)
+        cameraNode.position = SCNVector3(x: 5, y: 5, z: 5)
+        rootNode.addChildNode(cameraNode)
+        
+        //test move user object
+        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 2) {
+            userCharachter.runAction(SCNAction.moveBy(x: 15, y: 0, z: 10, duration: 50))
+        }
+        
+        //lighting
+        let environment = NSImage(named: "hdri.jpg")
+        self.lightingEnvironment.contents = environment
+        self.lightingEnvironment.intensity = 2.0
+        
+        self.background.contents = NSColor.darkGray
+    }
+    
+    func createCameraNode(following target: SCNNode) -> SCNNode {
+        let camera = SCNCamera()
+        
+        camera.focalLength = 18
+        camera.focusDistance = 7
+        
+        camera.zFar = 1000
+        camera.zNear = 0.1
+        
+        camera.fStop = 0.009
+        camera.apertureBladeCount = 5
+        camera.wantsDepthOfField = true
+        
+        camera.bloomBlurRadius = 30
+        camera.bloomIntensity = 0.4
+        
+        camera.vignettingIntensity = 2
+        
+        camera.wantsHDR = true
+        
+        let cameraNode = SCNNode()
+        cameraNode.camera = camera
+        
+        let lookAtConstraint = SCNLookAtConstraint(target: target)
+        lookAtConstraint.isGimbalLockEnabled = true
+        
+        let distanceConstraint = SCNDistanceConstraint(target: target)
+        distanceConstraint.maximumDistance = 7
+        distanceConstraint.minimumDistance = 7
+        let looseFollowConstraint = SCNAccelerationConstraint()
+        
+        cameraNode.constraints = [lookAtConstraint, distanceConstraint, looseFollowConstraint]
+        
+        return cameraNode
+    }
+    
+    func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
+        //        print(sceneView.pointOfView?.position)
     }
     //    func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
     //        guard let updateTime = self.updateTime, let timeTillNextUpdate = TimeInterval(exactly: 2) else { return }
@@ -142,7 +179,7 @@ class HarrisCharachter {
         
         //inside light
         light.intensity = 10
-        light.attenuationEndDistance = 4
+        light.attenuationEndDistance = 6
         
         light.type = SCNLight.LightType.omni
         
