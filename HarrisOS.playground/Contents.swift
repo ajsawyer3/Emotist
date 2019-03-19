@@ -19,7 +19,7 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         
         sceneView.delegate = self
         sceneView.scene = self
-        
+        sceneView.allowsCameraControl = true
         sceneView.showsStatistics = true
         
         //GEOMETRY
@@ -28,14 +28,15 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         let floorNode = SCNNode(geometry: floorGeometry)
         floorNode.position = SCNVector3(0, -0.51, 0)
         
+        
+        
         //floor material
-        floorGeometry.reflectivity = 0
+        
         let material = floorGeometry.firstMaterial
         material?.lightingModel = .physicallyBased
         
+        floorGeometry.reflectivity = 0.01
         material?.diffuse.contents = NSColor(white: 0.02, alpha: 1)
-        
-        //        material?.roughness.contents = NSColor(white: 0.4, alpha: 1)
         material?.metalness.contents = NSColor(white: 0.8, alpha: 1)
         material?.roughness.contents = NSImage(imageLiteralResourceName: "grid.png")
         material?.roughness.wrapT = .mirror
@@ -44,10 +45,10 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         
         self.rootNode.addChildNode(floorNode)
         
-        //create & add charachters to scene (where no other charachters exist)
-        let charachterCount = 19
+        //create & add charachters to scene (in unique location)
+        let charachterCount = 200
         for x in 0...charachterCount {
-            let fieldSize = charachterCount/4
+            let fieldSize = charachterCount/5
             var randomX = Int.random(in: 0...fieldSize)
             var randomZ = Int.random(in: 0...fieldSize)
             
@@ -75,7 +76,8 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         
         //CAMERA & LIGHTING
         let cameraNode = createCameraNode(following: userCharachter)
-        cameraNode.position = SCNVector3(x: 5, y: 5, z: 5)
+//        cameraNode.position = SCNVector3(x: 6, y: 6, z: 6)
+        cameraNode.position = userCharachter.position
         rootNode.addChildNode(cameraNode)
         
         //test move user object
@@ -88,41 +90,54 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         self.lightingEnvironment.contents = environment
         self.lightingEnvironment.intensity = 2.0
         
-        self.background.contents = NSColor.darkGray
+        self.background.contents = NSColor.black
     }
     
     func createCameraNode(following target: SCNNode) -> SCNNode {
         let camera = SCNCamera()
         
-        camera.focalLength = 18
-        camera.focusDistance = 7
+        camera.focalLength = 24
+        camera.focusDistance = 8.124
         
-        camera.zFar = 1000
-        camera.zNear = 0.1
+        camera.zFar = 500
+        camera.zNear = 0
+        
+//        camera.colorFringeIntensity = 5
+//        camera.colorFringeStrength = 0.5
         
         camera.fStop = 0.009
         camera.apertureBladeCount = 5
         camera.wantsDepthOfField = true
         
-        camera.bloomBlurRadius = 30
-        camera.bloomIntensity = 0.4
+        camera.bloomBlurRadius = 8
+        camera.bloomIntensity = 0.2
+        camera.bloomThreshold = 0.3
         
-        camera.vignettingIntensity = 2
+        camera.vignettingIntensity = 0.3
+        camera.vignettingPower = 1
         
         camera.wantsHDR = true
         
         let cameraNode = SCNNode()
         cameraNode.camera = camera
         
+        
+        
         let lookAtConstraint = SCNLookAtConstraint(target: target)
         lookAtConstraint.isGimbalLockEnabled = true
         
-        let distanceConstraint = SCNDistanceConstraint(target: target)
-        distanceConstraint.maximumDistance = 7
-        distanceConstraint.minimumDistance = 7
+        let replicateConstraint = SCNReplicatorConstraint(target: target)
+//        replicateConstraint.positionOffset = SCNVector3(x: -7, y: 3, z: 0)
+        replicateConstraint.replicatesScale = false
+        replicateConstraint.replicatesOrientation = false
+        
+        replicateConstraint.positionOffset = SCNVector3(x: -5, y: 4, z: 5)
+        
         let looseFollowConstraint = SCNAccelerationConstraint()
         
-        cameraNode.constraints = [lookAtConstraint, distanceConstraint, looseFollowConstraint]
+        
+        
+        cameraNode.constraints = [replicateConstraint, lookAtConstraint, looseFollowConstraint]
         
         return cameraNode
     }
@@ -163,6 +178,8 @@ class HarrisCharachter {
         
         let geometry = SCNBox(width: 0.99, height: 0.99, length: 0.99, chamferRadius: 0.26)
         
+        
+        
         //cube material
         if let firstMaterial = geometry.firstMaterial {
             firstMaterial.lightingModel = .physicallyBased
@@ -176,7 +193,6 @@ class HarrisCharachter {
         node = SCNNode(geometry: geometry)
         node.position = position
         
-        
         //inside light
         light.intensity = 10
         light.attenuationEndDistance = 6
@@ -186,7 +202,11 @@ class HarrisCharachter {
         lightNode = SCNNode()
         lightNode.light = light
         lightNode.position = node.position
-        lightNode.position.y += 0.01
+        lightNode.position.y += 0.001
+        
+        
+        
+//        node.castsShadow = true
     }
     
     func changeColorTo(_ newColor: NSColor) {
