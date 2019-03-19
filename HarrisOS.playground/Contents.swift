@@ -83,27 +83,30 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         //        test move user object
         DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 2) {
                         userCharachter.node.runAction(SCNAction.moveBy(x: 15, y: 0, z: 10, duration: 50))
-            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 5) {
-                for x in 0...99 {
-                    self.charachters[x].calculateEmotionLevel(charachters: self.charachters)
-                }
-                DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 5) {
-                    for x in 0...99 {
-                        self.charachters[x].calculateEmotionLevel(charachters: self.charachters)
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 5) {
-                        userCharachter.happinessLevel = 0.2
-                        for x in 0...99 {
-                            self.charachters[x].calculateEmotionLevel(charachters: self.charachters)
-                        }
-                        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 5) {
-                            for x in 0...99 {
-                                self.charachters[x].calculateEmotionLevel(charachters: self.charachters)
-                            }
-                        }
-                    }
-                }
+             for x in 0...99 {
+            self.charachters[x].calculateEmotionLevel(charachters: self.charachters)
             }
+//            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 5) {
+//                for x in 0...99 {
+//                    self.charachters[x].calculateEmotionLevel(charachters: self.charachters)
+//                }
+//                DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 5) {
+//                    for x in 0...99 {
+//                        self.charachters[x].calculateEmotionLevel(charachters: self.charachters)
+//                    }
+//                    DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 5) {
+//                        userCharachter.happinessLevel = 0.2
+//                        for x in 0...99 {
+//                            self.charachters[x].calculateEmotionLevel(charachters: self.charachters)
+//                        }
+//                        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 5) {
+//                            for x in 0...99 {
+//                                self.charachters[x].calculateEmotionLevel(charachters: self.charachters)
+//                            }
+//                        }
+//                    }
+//                }
+//            }
             
         }
         
@@ -180,12 +183,10 @@ class HarrisCharachter {
     var node: SCNNode
     //    var lightNode: SCNNode
     
-    var happinessLevel = Double.random(in: 0.2...0.8)
+    var happinessLevel = Double.random(in: 0...1)
 //    var happinessLevel = 0.5
     
     private let light = SCNLight()
-    
-    private var currentColor: NSColor
     
     init(position: SCNVector3) {
         
@@ -199,10 +200,6 @@ class HarrisCharachter {
             
             firstMaterial.metalness.contents = NSColor(white: 0.8, alpha: 1)
             firstMaterial.roughness.contents = NSImage(imageLiteralResourceName: "normal.png")
-            
-            currentColor = NSColor(hue: 0, saturation: 0, brightness: 0, alpha: 1)
-        } else {
-            currentColor = NSColor(hue: 0, saturation: 0, brightness: 0, alpha: 0)
         }
         
         
@@ -224,67 +221,43 @@ class HarrisCharachter {
     
     
     func calculateEmotionLevel(charachters: [HarrisCharachter]) {
-        var chanceOfBecomingHappy = 0.5
-        
+        var happinessSum = 0.0
+        var nearbyCharachterCount = 0.0
         for charachter in charachters {
-            //get distance
             let selfPostion = SCNVector3ToGLKVector3(self.node.worldPosition)
             let charachterPosition = SCNVector3ToGLKVector3(charachter.node.worldPosition)
             
             var distance = Double(GLKVector3Distance(selfPostion, charachterPosition))
             
-            
-            let distanceFactor = 1 - (distance/21.25)
-            
-//            print(distanceFactor)
-            //see if other charachter is happy or not
-            if charachter.happinessLevel >= 0.5 {
-                chanceOfBecomingHappy += (0.1 * (distanceFactor*distanceFactor*distanceFactor*distanceFactor*distanceFactor*distanceFactor*distanceFactor*distanceFactor*distanceFactor*distanceFactor*distanceFactor*distanceFactor*distanceFactor*distanceFactor*distanceFactor*distanceFactor))
-                
+            var correctDistance = (distance/21.25)
+            if correctDistance < 0.1 {
+                happinessSum += (1-correctDistance) * charachter.happinessLevel
+                nearbyCharachterCount += 1
             } else {
-//                let percentReduction = chanceOfBecomingHappy / 1
-//                chanceOfBecomingHappy -= percentReduction * distanceFactor
-                chanceOfBecomingHappy -= (0.1 * (distanceFactor*distanceFactor*distanceFactor*distanceFactor*distanceFactor*distanceFactor*distanceFactor*distanceFactor*distanceFactor*distanceFactor*distanceFactor*distanceFactor*distanceFactor*distanceFactor*distanceFactor*distanceFactor))
+                happinessSum += 0
             }
         }
+        //        print("HAPINESS AVG: \(happinessAvg), nearby cc: \(nearbyCharachterCount)")
         
-        if chanceOfBecomingHappy >= 1 {
-            chanceOfBecomingHappy = 1
-        } else if chanceOfBecomingHappy <= 0 {
-            chanceOfBecomingHappy = 0
-        }
-        
-        var hueValue: CGFloat
-        let random = Double.random(in: 0...1)
-//        if random < chanceOfBecomingHappy {
-//            //turn happy
-//            hueValue = 0.15
-//            happinessLevel = chanceOfBecomingHappy
-//
-//        } else {
-//            //turn sad
-//            hueValue = 0
-//            happinessLevel = chanceOfBecomingHappy
-//        }
-        print(chanceOfBecomingHappy)
-        let newColorValue = NSColor(hue: CGFloat((chanceOfBecomingHappy*2)*0.15), saturation: 1, brightness: 1, alpha: 1)
-        
-//        changeColorTo(newColorValue)
-        node.geometry?.firstMaterial?.diffuse.contents = newColorValue
+        happinessLevel = happinessSum/nearbyCharachterCount
+        let newHue = CGFloat(happinessLevel*0.15)
+
+        let newColor = NSColor(hue: newHue, saturation: 1, brightness: 1, alpha: 1)
+//        changeColorTo(newColor)
+        SCNTransaction.begin()
+        SCNTransaction.animationDuration = 0.5
+        node.geometry?.firstMaterial?.diffuse.contents = newColor
+        //                lightNode.light?.color = newColor
+        SCNTransaction.commit()
     }
     
     func changeColorTo(_ newColor: NSColor) {
-        
         SCNTransaction.begin()
         SCNTransaction.animationDuration = 0.5
         node.geometry?.firstMaterial?.diffuse.contents = newColor
         //                lightNode.light?.color = newColor
         
         SCNTransaction.commit()
-        SCNTransaction.completionBlock = {
-            self.currentColor = newColor
-        }
-        
     }
 }
 
