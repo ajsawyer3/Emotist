@@ -23,7 +23,7 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         
         sceneView.delegate = self
         sceneView.scene = self
-        sceneView.allowsCameraControl = true
+//        sceneView.allowsCameraControl = true
         sceneView.showsStatistics = true
         sceneView.loops = true
         
@@ -35,7 +35,7 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         let floorNode = SCNNode(geometry: floorGeometry)
         floorNode.position = SCNVector3(0, -0.51, 0)
         
-        floorNode.physicsBody = SCNPhysicsBody(type: .static, shape: SCNPhysicsShape(geometry: SCNBox(width:1000, height:0.0001, length:1000, chamferRadius: 0), options: nil))
+//        floorNode.physicsBody = SCNPhysicsBody(type: .static, shape: SCNPhysicsShape(geometry: SCNBox(width:1000, height:0.0001, length:1000, chamferRadius: 0), options: nil))
         
         
         //floor material
@@ -43,7 +43,8 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         let material = floorGeometry.firstMaterial
         material?.lightingModel = .physicallyBased
         
-        floorGeometry.reflectivity = 0.01
+//        floorGeometry.reflectivity = 0.01
+        floorGeometry.reflectivity = 0
         material?.diffuse.contents = NSColor(white: 0.02, alpha: 1)
         material?.metalness.contents = NSColor(white: 0.8, alpha: 1)
         material?.roughness.contents = NSImage(imageLiteralResourceName: "grid.png")
@@ -63,29 +64,30 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         userCharachter.happinessLevel = 0.5
         self.rootNode.addChildNode(userCharachter.node)
         self.rootNode.addChildNode(userCharachter.lightNode)
+        charachters.append(userCharachter)
         
         var previousLocations: [CGPoint] = [CGPoint(x: 8, y: 8)]
         
         for x in 0...charachterCount {
             let fieldSize = 15
-            
+
             var uniquePoint = CGPoint(x: -1, y: -1)
             while previousLocations.contains(uniquePoint) || uniquePoint.x == -1 || (uniquePoint.x == 8 && uniquePoint.y == 8){
                 let randomX = Int.random(in: 0...fieldSize)
                 let randomZ = Int.random(in: 0...fieldSize)
                 uniquePoint = CGPoint(x: randomX, y: randomZ)
             }
-            
+
             previousLocations.append(uniquePoint)
-            
+
             //make new charachter
             let newCharachter = BlockCharachter(position: SCNVector3(uniquePoint.x, 0, uniquePoint.y))
             charachters.append(newCharachter)
             newCharachter.happinessLevel = 0.5
             self.rootNode.addChildNode(newCharachter.node)
             self.rootNode.addChildNode(newCharachter.lightNode)
-            
-            
+
+
             let random1 = CGFloat.random(in: 0...255)
             let random2 = CGFloat.random(in: 0...255)
             let random3 = CGFloat.random(in: 0...255)
@@ -140,9 +142,9 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         camera.zFar = 1000
         camera.zNear = 0.1
         
-        camera.fStop = 0.009
+        camera.fStop = 0.05
         camera.apertureBladeCount = 5
-//        camera.wantsDepthOfField = true
+        camera.wantsDepthOfField = true
         
         camera.bloomBlurRadius = 8
         camera.bloomIntensity = 0.2
@@ -151,7 +153,7 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         camera.vignettingIntensity = 0.3
         camera.vignettingPower = 1
         
-//        camera.wantsHDR = true
+        camera.wantsHDR = true
         
         let cameraNode = SCNNode()
         cameraNode.camera = camera
@@ -164,11 +166,10 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         let replicateConstraint = SCNReplicatorConstraint(target: target)
         replicateConstraint.replicatesScale = false
         replicateConstraint.replicatesOrientation = false
-        
         replicateConstraint.positionOffset = SCNVector3(x: -5, y: 4, z: 5)
         
         let looseFollowConstraint = SCNAccelerationConstraint()
-        
+        looseFollowConstraint.damping = 0.7
         
         cameraNode.constraints = [replicateConstraint, lookAtConstraint, looseFollowConstraint]
         
@@ -212,6 +213,16 @@ class BlockCharachter {
         
         let geometry = SCNBox(width: 0.95, height: 0.95, length: 0.95, chamferRadius: 0.26)
         
+        
+        node = SCNNode(geometry: geometry)
+        node.position = position
+        
+        //physics
+//        node.physicsBody = SCNPhysicsBody(type: .dynamic, shape: SCNPhysicsShape(geometry: geometry, options: nil))
+//        node.physicsBody?.allowsResting = true
+//                node.physicsBody?.restitution = 0
+        
+        
         //cube material
         if let firstMaterial = geometry.firstMaterial {
             firstMaterial.lightingModel = .physicallyBased
@@ -219,17 +230,9 @@ class BlockCharachter {
             firstMaterial.diffuse.contents = NSColor(hue: 0, saturation: 0, brightness: 0, alpha: 1)
             
             firstMaterial.metalness.contents = NSColor(white: 0.8, alpha: 1)
-            firstMaterial.roughness.contents = NSImage(imageLiteralResourceName: "normal.png")
+            firstMaterial.roughness.contents = NSColor(white: 0.3, alpha: 1)
+//            firstMaterial.roughness.contents = NSImage(imageLiteralResourceName: "normal.png")
         }
-        
-        
-        node = SCNNode(geometry: geometry)
-        node.position = position
-        
-        node.physicsBody = SCNPhysicsBody(type: .dynamic, shape: SCNPhysicsShape(geometry: geometry, options: nil))
-        node.physicsBody?.allowsResting = true
-        //        node.physicsBody?.restitution = 0
-        //        node.physicsBody?.physicsShape
         
         //inside light
         let light = SCNLight()
@@ -240,7 +243,7 @@ class BlockCharachter {
         
         lightNode.light = light
         lightNode.position = node.position
-        lightNode.position.y += 0.01
+        lightNode.position.y += 0.1
     }
     
     
@@ -248,9 +251,8 @@ class BlockCharachter {
     func calculateEmotionLevel(charachters: [BlockCharachter]) {
         var happinessSum = 0.0
         var nearbyCharachterCount = 0.0
-        //        for x in 1...(charachters.count-1) {
+        
         for charachter in charachters {
-            //            let charachter = charachters[x]
             let selfPostion = SCNVector3ToGLKVector3(self.node.worldPosition)
             let charachterPosition = SCNVector3ToGLKVector3(charachter.node.worldPosition)
             
@@ -356,17 +358,67 @@ class SceneViewController: NSViewController {
         let downArrow: UInt16 = 0x7D
         let upArrow: UInt16 = 0x7E
         
+        let userCharachterNode = scene.charachters[0].node
+//        let value: CGFloat = 100
+//        if event.keyCode == downArrow {
+//            print("DOWN")
+//            userCharachterNode.physicsBody?.applyTorque(SCNVector4(x: -1*value, y: 0, z: 0, w: 1), asImpulse: false)
+//        } else if event.keyCode == upArrow {
+//            print("FOWARD")
+//            userCharachterNode.physicsBody?.applyTorque(SCNVector4(x: value, y: 0, z: value, w: 1), asImpulse: false)
+//        } else if event.keyCode == rightArrow {
+//            print("RIGHT")
+//            userCharachterNode.physicsBody?.applyTorque(SCNVector4(x: 0, y: 0, z: value, w: 1), asImpulse: false)
+//        } else if event.keyCode == leftArrow {
+//            print("LEFT")
+//            userCharachterNode.physicsBody?.applyTorque(SCNVector4(x: 0, y: 0, z: -1*value, w: 1), asImpulse: false)
+//        } else {
+//            print("YOOO")
+//        }
+
+        let rotateAction: SCNAction
+        let moveAction: SCNAction
         if event.keyCode == downArrow {
-            print("DOWN")
+            print("BACKWARDS")
+            rotateAction = SCNAction.rotateBy(x: 0, y: 0, z: 1.5708*2, duration: 0.4)
+            moveAction = SCNAction.moveBy(x: -1, y: 0, z: 0, duration: 0.4)
         } else if event.keyCode == upArrow {
-            print("UP")
+            print("FOWARD")
+            rotateAction = SCNAction.rotateBy(x: 0, y: 0, z: -1.5708*2, duration: 0.4)
+            moveAction = SCNAction.moveBy(x: 1, y: 0, z: 0, duration: 0.4)
         } else if event.keyCode == rightArrow {
             print("RIGHT")
+            rotateAction = SCNAction.rotateBy(x: 1.5708*2, y: 0, z: 0, duration: 0.4)
+            moveAction = SCNAction.moveBy(x: 0, y: 0, z: 1, duration: 0.4)
+            
         } else if event.keyCode == leftArrow {
             print("LEFT")
+            rotateAction = SCNAction.rotateBy(x: -1.5708*2, y: 0, z: 0, duration: 0.4)
+            moveAction = SCNAction.moveBy(x: 0, y: 0, z: -1, duration: 0.4)
         } else {
-            print("YOOO")
+            return
         }
+        
+        
+        
+        
+        let moveUpAction = SCNAction.customAction(duration: 0.4) { (node, time) in
+            //-16.79375(x-0.2)^2+0.67175
+            let position = (-16.79375*pow(time-0.2, 2)) + 0.67175
+            print(position)
+            node.position.y = position
+        }
+        userCharachterNode.runAction((SCNAction.group([rotateAction, moveAction, moveUpAction]))) {
+            
+            //change reference point
+            
+            userCharachterNode.rotation = SCNVector4(0, 0, 0, 1.5708*2)
+            userCharachterNode.position.y = 0
+            //move light
+            
+        }
+//
+        
     }
 }
 
