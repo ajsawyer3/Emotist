@@ -16,7 +16,7 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
     var sceneView: SCNView = SCNView(frame: CGRect(x: 0, y: 0, width: 400, height: 800))
     public var charachters: [BlockCharachter] = []
     
-    
+    let userCharachter = UserCharachter(position: SCNVector3(x: 7, y: 0, z: 7))
     
     override init() {
         super.init()
@@ -55,18 +55,18 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         self.rootNode.addChildNode(floorNode)
         
         //create & add charachters to scene (in unique location)
-        let charachterCount = 99
-        
+//        let charachterCount = 99
+        let charachterCount = 2
         
         
         //make user charachter
-        let userCharachter = UserCharachter(position: SCNVector3(x: 8, y: 0, z: 8))
+        var previousLocations: [CGPoint] = [CGPoint(x: 7, y: 7)]
         userCharachter.happinessLevel = 0.5
         self.rootNode.addChildNode(userCharachter.node)
         self.rootNode.addChildNode(userCharachter.lightNode)
         charachters.append(userCharachter)
         
-        var previousLocations: [CGPoint] = [CGPoint(x: 8, y: 8)]
+        
         
         for x in 0...charachterCount {
             let fieldSize = 15
@@ -131,6 +131,60 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         self.lightingEnvironment.intensity = 2.0
         
         self.background.contents = NSColor.black
+    }
+    
+    func calculateEmotions() {
+//        var charachtersLocations: [CGPoint] = []
+//        for charachter in vc.scene.charachters {
+//            charachtersLocations.append(CGPoint(x: charachter.node.position.x, y: charachter.node.position.z))
+//        }
+//        let test = self.userCharachter.
+        
+        
+        
+            
+            
+        let newHappiness = calculateNewHappiness(map: self.makeArrayMap())
+        print(newHappiness)
+        
+        
+        
+        
+    }
+    
+    func calculateNewHappiness(map: [[BlockCharachter?]]) -> Double {
+        let userPosition = CGPoint(x: self.userCharachter.node.position.x, y: self.userCharachter.node.position.z)
+        var newHappinessTotal = 0.0
+        for x in 0...15 {
+            for z in 0...15 {
+                if let otherCharachter = map[x][z] {
+                    let otherPosition = CGPoint(x: otherCharachter.node.position.x, y: otherCharachter.node.position.z)
+                    let distance = Double(pow(otherPosition.x-userPosition.x, 2)+pow(otherPosition.y-userPosition.y, 2)).squareRoot()
+                    let normalizedDistance = distance / 4
+                    //use distance to calcualte
+                    if distance < 4.0 {
+                        newHappinessTotal += normalizedDistance * otherCharachter.happinessLevel
+                    }
+                }
+            }
+        }
+        return newHappinessTotal
+    }
+    
+    func makeArrayMap() -> [[BlockCharachter?]] {
+        var charachtersOnGrid: [[BlockCharachter?]] = []
+        for x in 0...15 {
+            charachtersOnGrid.append([])
+            for _ in 0...15 {
+                charachtersOnGrid[x].append(nil)
+            }
+        }
+        
+        for charachter in charachters {
+            charachtersOnGrid[Int(charachter.node.position.x)][Int(charachter.node.position.z)] = charachter
+        }
+        
+        return charachtersOnGrid
     }
     
     func createCameraNode(following target: SCNNode) -> SCNNode {
@@ -278,33 +332,6 @@ class BlockCharachter {
 
 
 class UserCharachter: BlockCharachter {
-    func calculateEmotion() {
-        let charachters = vc.scene.charachters
-        for charachter in charachters {
-            let refPosition = float3(charachter.node.position)
-            
-            for charachter in charachters {
-                let charachterTransform = float4x4(charachter.node.worldTransform)
-                let charachterPosition = float3(charachterTransform[3].x, charachterTransform[3].y, charachterTransform[3].z)
-                let distance = simd.distance(refPosition, charachterPosition)
-                let relativeDistance = Double(distance) / 22
-                print(relativeDistance)
-            }
-            
-            
-            //                happinessLevel = happinessSum/nearbyCharachterCount
-            //                print("HAPINESS AVG: \(happinessLevel), nearby cc: \(nearbyCharachterCount)")
-            //                let newHue = CGFloat(happinessLevel*0.15)
-            
-            //                let newColor = NSColor(hue: newHue, saturation: 1, brightness: 1, alpha: 1)
-            //        changeColorTo(newColor)
-            //        SCNTransaction.begin()
-            //        SCNTransaction.animationDuration = 0.5
-            //                node.geometry?.firstMaterial?.diffuse.contents = newColor
-            //                lightNode.light?.color = newColor
-            //        SCNTransaction.commit()
-        }
-    }
     func move(in direction: Direction) {
         let rotateAction: SCNAction
         let moveAction: SCNAction
@@ -337,21 +364,15 @@ class UserCharachter: BlockCharachter {
         super.node.runAction((SCNAction.group([rotateAction, moveAction, moveUpAction]))) {
             //change reference point
             
-            super.node.rotation = SCNVector4(0, 0, 0, 1.5708*2)
-            super.node.position.y = 0
+//            super.node.rotation = SCNVector4(0, 0, 0, 1.5708*2)
+//            super.node.position.y = 0
             
             //move light
             
             //calculate emotions
-            
-            SCNAction.perform(#selector(self.calculateEmotion), on: Thread.main, with: nil, waitUntilDone: true)
-            
-            
-            
-            
+            vc.scene.calculateEmotions()
+            //go through each charachter and calculate emotion based on array
         }
-        
-        
     }
 }
 
