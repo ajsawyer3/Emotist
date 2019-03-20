@@ -3,13 +3,18 @@ import Cocoa
 import SceneKit
 import PlaygroundSupport
 
-
+enum Direction {
+    case foward
+    case back
+    case right
+    case left
+}
 
 class Scene: SCNScene, SCNSceneRendererDelegate {
     
     
     var sceneView: SCNView = SCNView(frame: CGRect(x: 0, y: 0, width: 400, height: 800))
-    var charachters: [HarrisCharachter] = []
+    var charachters: [BlockCharachter] = []
     
     
     
@@ -22,12 +27,15 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         sceneView.showsStatistics = true
         sceneView.loops = true
         
+//        sceneView.debugOptions = [.showPhysicsShapes]
+        
         //GEOMETRY
         //floor
         let floorGeometry = SCNFloor()
         let floorNode = SCNNode(geometry: floorGeometry)
         floorNode.position = SCNVector3(0, -0.51, 0)
         
+        floorNode.physicsBody = SCNPhysicsBody(type: .static, shape: SCNPhysicsShape(geometry: SCNBox(width:1000, height:0.0001, length:1000, chamferRadius: 0), options: nil))
         
         
         //floor material
@@ -47,24 +55,36 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         
         //create & add charachters to scene (in unique location)
         let charachterCount = 99
+        
+        
+        
+        //make user charachter
+        let userCharachter = UserCharachter(position: SCNVector3(x: 8, y: 0, z: 8))
+        userCharachter.happinessLevel = 0.5
+        self.rootNode.addChildNode(userCharachter.node)
+        self.rootNode.addChildNode(userCharachter.lightNode)
+        
+        var previousLocations: [CGPoint] = [CGPoint(x: 8, y: 8)]
+        
         for x in 0...charachterCount {
             let fieldSize = 15
-            var randomX = Int.random(in: 0...fieldSize)
-            var randomZ = Int.random(in: 0...fieldSize)
             
-            for charachter in charachters {
-                while Int(exactly: charachter.node.position.x) == randomX {
-                    randomX = Int.random(in: 0...fieldSize)
-                }
-                
-                while Int(exactly: charachter.node.position.z) == randomZ {
-                    randomZ = Int.random(in: 0...fieldSize)
-                }
+            var uniquePoint = CGPoint(x: -1, y: -1)
+            while previousLocations.contains(uniquePoint) || uniquePoint.x == -1 || (uniquePoint.x == 8 && uniquePoint.y == 8){
+                let randomX = Int.random(in: 0...fieldSize)
+                let randomZ = Int.random(in: 0...fieldSize)
+                uniquePoint = CGPoint(x: randomX, y: randomZ)
             }
             
-            charachters.append(HarrisCharachter(position: SCNVector3(randomX, 0, randomZ)))
-            self.rootNode.addChildNode(charachters[x].node)
-            //            self.rootNode.addChildNode(charachters[x].lightNode)
+            previousLocations.append(uniquePoint)
+            
+            //make new charachter
+            let newCharachter = BlockCharachter(position: SCNVector3(uniquePoint.x, 0, uniquePoint.y))
+            charachters.append(newCharachter)
+            newCharachter.happinessLevel = 0.5
+            self.rootNode.addChildNode(newCharachter.node)
+            self.rootNode.addChildNode(newCharachter.lightNode)
+            
             
             let random1 = CGFloat.random(in: 0...255)
             let random2 = CGFloat.random(in: 0...255)
@@ -72,99 +92,89 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
             self.charachters[x].changeColorTo(NSColor(red: random1/255, green: random2/255, blue: random3/255, alpha: 1))
         }
         
-        let userCharachter = charachters[0]
-        userCharachter.happinessLevel = 1
+        
+        
         
         //CAMERA & LIGHTING
         let cameraNode = createCameraNode(following: userCharachter.node)
-        //        cameraNode.position = SCNVector3(x: 6, y: 6, z: 6)
         cameraNode.position = userCharachter.node.position
         rootNode.addChildNode(cameraNode)
         
         
-        
         //        test move user object
-//        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 1) {
-//            userCharachter.node.runAction(SCNAction.moveBy(x: 15, y: 0, z: 10, duration: 50))
-//
-//            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 3) {
-//                for x in 0...99 {
-//                    self.charachters[x].calculateEmotionLevel(charachters: self.charachters)
-//                }
-//                DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 3) {
-//                    for x in 0...99 {
-//                        self.charachters[x].calculateEmotionLevel(charachters: self.charachters)
-//                    }
-//                    userCharachter.happinessLevel = 1
-//                    DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 3) {
-//                        for x in 0...99 {
-//                            self.charachters[x].calculateEmotionLevel(charachters: self.charachters)
-//                        }
-//                    }
-//                }
-//            }
-//        }
-
-    //lighting
-    let environment = NSImage(named: "hdri.jpg")
-    self.lightingEnvironment.contents = environment
-    self.lightingEnvironment.intensity = 2.0
+        //        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 1) {
+        //            userCharachter.node.runAction(SCNAction.moveBy(x: 15, y: 0, z: 10, duration: 50))
+        //
+        //            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 3) {
+        //                for x in 0...99 {
+        //                    self.charachters[x].calculateEmotionLevel(charachters: self.charachters)
+        //                }
+        //                DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 3) {
+        //                    for x in 0...99 {
+        //                        self.charachters[x].calculateEmotionLevel(charachters: self.charachters)
+        //                    }
+        //                    userCharachter.happinessLevel = 1
+        //                    DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 3) {
+        //                        for x in 0...99 {
+        //                            self.charachters[x].calculateEmotionLevel(charachters: self.charachters)
+        //                        }
+        //                    }
+        //                }
+        //            }
+        //        }
+        
+        //lighting
+        let environment = NSImage(named: "hdri.jpg")
+        self.lightingEnvironment.contents = environment
+        self.lightingEnvironment.intensity = 2.0
+        
+        self.background.contents = NSColor.black
+    }
     
-    self.background.contents = NSColor.black
-}
-
-func createCameraNode(following target: SCNNode) -> SCNNode {
-    let camera = SCNCamera()
+    func createCameraNode(following target: SCNNode) -> SCNNode {
+        let camera = SCNCamera()
+        
+        camera.focalLength = 24
+        camera.focusDistance = 8.124
+        
+        camera.zFar = 1000
+        camera.zNear = 0.1
+        
+        camera.fStop = 0.009
+        camera.apertureBladeCount = 5
+//        camera.wantsDepthOfField = true
+        
+        camera.bloomBlurRadius = 8
+        camera.bloomIntensity = 0.2
+        camera.bloomThreshold = 0.3
+        
+        camera.vignettingIntensity = 0.3
+        camera.vignettingPower = 1
+        
+//        camera.wantsHDR = true
+        
+        let cameraNode = SCNNode()
+        cameraNode.camera = camera
+        
+        
+        
+        let lookAtConstraint = SCNLookAtConstraint(target: target)
+        lookAtConstraint.isGimbalLockEnabled = true
+        
+        let replicateConstraint = SCNReplicatorConstraint(target: target)
+        replicateConstraint.replicatesScale = false
+        replicateConstraint.replicatesOrientation = false
+        
+        replicateConstraint.positionOffset = SCNVector3(x: -5, y: 4, z: 5)
+        
+        let looseFollowConstraint = SCNAccelerationConstraint()
+        
+        
+        cameraNode.constraints = [replicateConstraint, lookAtConstraint, looseFollowConstraint]
+        
+        return cameraNode
+    }
     
-    camera.focalLength = 24
-    camera.focusDistance = 8.124
-    
-    camera.zFar = 1000
-    camera.zNear = 0
-    
-    camera.fStop = 0.009
-    camera.apertureBladeCount = 5
-    camera.wantsDepthOfField = false
-    
-    camera.bloomBlurRadius = 8
-    camera.bloomIntensity = 0.2
-    camera.bloomThreshold = 0.3
-    
-    camera.vignettingIntensity = 0.3
-    camera.vignettingPower = 1
-    
-    camera.wantsHDR = true
-    
-    let cameraNode = SCNNode()
-    cameraNode.camera = camera
-    
-    
-    
-    let lookAtConstraint = SCNLookAtConstraint(target: target)
-    lookAtConstraint.isGimbalLockEnabled = true
-    
-    let replicateConstraint = SCNReplicatorConstraint(target: target)
-    replicateConstraint.replicatesScale = false
-    replicateConstraint.replicatesOrientation = false
-    
-    replicateConstraint.positionOffset = SCNVector3(x: -5, y: 4, z: 5)
-    
-    let looseFollowConstraint = SCNAccelerationConstraint()
-    
-    
-    cameraNode.constraints = [replicateConstraint, lookAtConstraint, looseFollowConstraint]
-    
-    return cameraNode
-}
-
-
-
-
-
-//    func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
-
-//    }
-
     //idk what this is
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
@@ -173,18 +183,34 @@ func createCameraNode(following target: SCNNode) -> SCNNode {
     
 }
 
-class HarrisCharachter {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class BlockCharachter {
     var node: SCNNode
-    //    var lightNode: SCNNode
     
-    var happinessLevel = Double.random(in: 0...1)
-    //    var happinessLevel = 0.5
+    let lightNode = SCNNode()
     
-    private let light = SCNLight()
+    var happinessLevel = 0.5
     
     init(position: SCNVector3) {
         
-        let geometry = SCNBox(width: 0.99, height: 0.99, length: 0.99, chamferRadius: 0.26)
+        let geometry = SCNBox(width: 0.95, height: 0.95, length: 0.95, chamferRadius: 0.26)
         
         //cube material
         if let firstMaterial = geometry.firstMaterial {
@@ -200,26 +226,31 @@ class HarrisCharachter {
         node = SCNNode(geometry: geometry)
         node.position = position
         
+        node.physicsBody = SCNPhysicsBody(type: .dynamic, shape: SCNPhysicsShape(geometry: geometry, options: nil))
+        node.physicsBody?.allowsResting = true
+        //        node.physicsBody?.restitution = 0
+        //        node.physicsBody?.physicsShape
+        
         //inside light
-        //        light.intensity = 10
-        //        light.attenuationEndDistance = 5
-        //
-        //        light.type = SCNLight.LightType.omni
-        //
-        //        lightNode = SCNNode()
-        //        lightNode.light = light
-        //        lightNode.position = node.position
-        //        lightNode.position.y += 0.01
+        let light = SCNLight()
+        light.intensity = 10
+        light.attenuationEndDistance = 5
+        
+        light.type = SCNLight.LightType.omni
+        
+        lightNode.light = light
+        lightNode.position = node.position
+        lightNode.position.y += 0.01
     }
     
     
     
-    func calculateEmotionLevel(charachters: [HarrisCharachter]) {
+    func calculateEmotionLevel(charachters: [BlockCharachter]) {
         var happinessSum = 0.0
         var nearbyCharachterCount = 0.0
-//        for x in 1...(charachters.count-1) {
+        //        for x in 1...(charachters.count-1) {
         for charachter in charachters {
-//            let charachter = charachters[x]
+            //            let charachter = charachters[x]
             let selfPostion = SCNVector3ToGLKVector3(self.node.worldPosition)
             let charachterPosition = SCNVector3ToGLKVector3(charachter.node.worldPosition)
             
@@ -236,27 +267,69 @@ class HarrisCharachter {
         
         
         happinessLevel = happinessSum/nearbyCharachterCount
-         print("HAPINESS AVG: \(happinessLevel), nearby cc: \(nearbyCharachterCount)")
+        print("HAPINESS AVG: \(happinessLevel), nearby cc: \(nearbyCharachterCount)")
         let newHue = CGFloat(happinessLevel*0.15)
         
         let newColor = NSColor(hue: newHue, saturation: 1, brightness: 1, alpha: 1)
         //        changeColorTo(newColor)
-//        SCNTransaction.begin()
-//        SCNTransaction.animationDuration = 0.5
+        //        SCNTransaction.begin()
+        //        SCNTransaction.animationDuration = 0.5
         node.geometry?.firstMaterial?.diffuse.contents = newColor
         //                lightNode.light?.color = newColor
-//        SCNTransaction.commit()
+        //        SCNTransaction.commit()
     }
     
     func changeColorTo(_ newColor: NSColor) {
         SCNTransaction.begin()
         SCNTransaction.animationDuration = 0.5
         node.geometry?.firstMaterial?.diffuse.contents = newColor
-        //                lightNode.light?.color = newColor
+        lightNode.light?.color = newColor
         
         SCNTransaction.commit()
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+class UserCharachter: BlockCharachter {
+    func move(in direction: Direction) {
+        if direction == .foward {
+            
+        } else if direction == .back {
+            
+        } else if direction == .right {
+            
+        } else if direction == .left {
+            
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 class SceneViewController: NSViewController {
     private var scene = Scene()
@@ -282,7 +355,7 @@ class SceneViewController: NSViewController {
         let rightArrow: UInt16 = 0x7C
         let downArrow: UInt16 = 0x7D
         let upArrow: UInt16 = 0x7E
-
+        
         if event.keyCode == downArrow {
             print("DOWN")
         } else if event.keyCode == upArrow {
