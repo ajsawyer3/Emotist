@@ -14,7 +14,7 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
     
     
     var sceneView: SCNView = SCNView(frame: CGRect(x: 0, y: 0, width: 400, height: 800))
-    var charachters: [BlockCharachter] = []
+    public var charachters: [BlockCharachter] = []
     
     
     
@@ -23,11 +23,11 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         
         sceneView.delegate = self
         sceneView.scene = self
-//        sceneView.allowsCameraControl = true
+        //        sceneView.allowsCameraControl = true
         sceneView.showsStatistics = true
         sceneView.loops = true
         
-//        sceneView.debugOptions = [.showPhysicsShapes]
+        //        sceneView.debugOptions = [.showPhysicsShapes]
         
         //GEOMETRY
         //floor
@@ -35,7 +35,7 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         let floorNode = SCNNode(geometry: floorGeometry)
         floorNode.position = SCNVector3(0, -0.51, 0)
         
-//        floorNode.physicsBody = SCNPhysicsBody(type: .static, shape: SCNPhysicsShape(geometry: SCNBox(width:1000, height:0.0001, length:1000, chamferRadius: 0), options: nil))
+        //        floorNode.physicsBody = SCNPhysicsBody(type: .static, shape: SCNPhysicsShape(geometry: SCNBox(width:1000, height:0.0001, length:1000, chamferRadius: 0), options: nil))
         
         
         //floor material
@@ -43,7 +43,7 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         let material = floorGeometry.firstMaterial
         material?.lightingModel = .physicallyBased
         
-//        floorGeometry.reflectivity = 0.01
+        //        floorGeometry.reflectivity = 0.01
         floorGeometry.reflectivity = 0
         material?.diffuse.contents = NSColor(white: 0.02, alpha: 1)
         material?.metalness.contents = NSColor(white: 0.8, alpha: 1)
@@ -70,24 +70,24 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         
         for x in 0...charachterCount {
             let fieldSize = 15
-
+            
             var uniquePoint = CGPoint(x: -1, y: -1)
             while previousLocations.contains(uniquePoint) || uniquePoint.x == -1 || (uniquePoint.x == 8 && uniquePoint.y == 8){
                 let randomX = Int.random(in: 0...fieldSize)
                 let randomZ = Int.random(in: 0...fieldSize)
                 uniquePoint = CGPoint(x: randomX, y: randomZ)
             }
-
+            
             previousLocations.append(uniquePoint)
-
+            
             //make new charachter
             let newCharachter = BlockCharachter(position: SCNVector3(uniquePoint.x, 0, uniquePoint.y))
             charachters.append(newCharachter)
             newCharachter.happinessLevel = 0.5
             self.rootNode.addChildNode(newCharachter.node)
             self.rootNode.addChildNode(newCharachter.lightNode)
-
-
+            
+            
             let random1 = CGFloat.random(in: 0...255)
             let random2 = CGFloat.random(in: 0...255)
             let random3 = CGFloat.random(in: 0...255)
@@ -176,6 +176,14 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         return cameraNode
     }
     
+    
+    
+    
+    
+    
+    
+    
+    
     //idk what this is
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
@@ -218,9 +226,9 @@ class BlockCharachter {
         node.position = position
         
         //physics
-//        node.physicsBody = SCNPhysicsBody(type: .dynamic, shape: SCNPhysicsShape(geometry: geometry, options: nil))
-//        node.physicsBody?.allowsResting = true
-//                node.physicsBody?.restitution = 0
+        //        node.physicsBody = SCNPhysicsBody(type: .dynamic, shape: SCNPhysicsShape(geometry: geometry, options: nil))
+        //        node.physicsBody?.allowsResting = true
+        //                node.physicsBody?.restitution = 0
         
         
         //cube material
@@ -231,7 +239,7 @@ class BlockCharachter {
             
             firstMaterial.metalness.contents = NSColor(white: 0.8, alpha: 1)
             firstMaterial.roughness.contents = NSColor(white: 0.3, alpha: 1)
-//            firstMaterial.roughness.contents = NSImage(imageLiteralResourceName: "normal.png")
+            //            firstMaterial.roughness.contents = NSImage(imageLiteralResourceName: "normal.png")
         }
         
         //inside light
@@ -246,40 +254,6 @@ class BlockCharachter {
         lightNode.position.y += 0.1
     }
     
-    
-    
-    func calculateEmotionLevel(charachters: [BlockCharachter]) {
-        var happinessSum = 0.0
-        var nearbyCharachterCount = 0.0
-        
-        for charachter in charachters {
-            let selfPostion = SCNVector3ToGLKVector3(self.node.worldPosition)
-            let charachterPosition = SCNVector3ToGLKVector3(charachter.node.worldPosition)
-            
-            let distance = Double(GLKVector3Distance(selfPostion, charachterPosition))
-            let correctDistance = (distance/21.25)
-            
-            if correctDistance < 0.05 {
-                happinessSum += (1-correctDistance) * charachter.happinessLevel
-                nearbyCharachterCount += 1
-            } else {
-                happinessSum += 0
-            }
-        }
-        
-        
-        happinessLevel = happinessSum/nearbyCharachterCount
-        print("HAPINESS AVG: \(happinessLevel), nearby cc: \(nearbyCharachterCount)")
-        let newHue = CGFloat(happinessLevel*0.15)
-        
-        let newColor = NSColor(hue: newHue, saturation: 1, brightness: 1, alpha: 1)
-        //        changeColorTo(newColor)
-        //        SCNTransaction.begin()
-        //        SCNTransaction.animationDuration = 0.5
-        node.geometry?.firstMaterial?.diffuse.contents = newColor
-        //                lightNode.light?.color = newColor
-        //        SCNTransaction.commit()
-    }
     
     func changeColorTo(_ newColor: NSColor) {
         SCNTransaction.begin()
@@ -304,16 +278,80 @@ class BlockCharachter {
 
 
 class UserCharachter: BlockCharachter {
+    func calculateEmotion() {
+        let charachters = vc.scene.charachters
+        for charachter in charachters {
+            let refPosition = float3(charachter.node.position)
+            
+            for charachter in charachters {
+                let charachterTransform = float4x4(charachter.node.worldTransform)
+                let charachterPosition = float3(charachterTransform[3].x, charachterTransform[3].y, charachterTransform[3].z)
+                let distance = simd.distance(refPosition, charachterPosition)
+                let relativeDistance = Double(distance) / 22
+                print(relativeDistance)
+            }
+            
+            
+            //                happinessLevel = happinessSum/nearbyCharachterCount
+            //                print("HAPINESS AVG: \(happinessLevel), nearby cc: \(nearbyCharachterCount)")
+            //                let newHue = CGFloat(happinessLevel*0.15)
+            
+            //                let newColor = NSColor(hue: newHue, saturation: 1, brightness: 1, alpha: 1)
+            //        changeColorTo(newColor)
+            //        SCNTransaction.begin()
+            //        SCNTransaction.animationDuration = 0.5
+            //                node.geometry?.firstMaterial?.diffuse.contents = newColor
+            //                lightNode.light?.color = newColor
+            //        SCNTransaction.commit()
+        }
+    }
     func move(in direction: Direction) {
-        if direction == .foward {
-            
-        } else if direction == .back {
-            
+        let rotateAction: SCNAction
+        let moveAction: SCNAction
+        if direction == .back {
+            print("BACKWARDS")
+            rotateAction = SCNAction.rotateBy(x: 0, y: 0, z: 1.5708*2, duration: 0.4)
+            moveAction = SCNAction.moveBy(x: -1, y: 0, z: 0, duration: 0.4)
+        } else if direction == .foward {
+            print("FOWARD")
+            rotateAction = SCNAction.rotateBy(x: 0, y: 0, z: -1.5708*2, duration: 0.4)
+            moveAction = SCNAction.moveBy(x: 1, y: 0, z: 0, duration: 0.4)
         } else if direction == .right {
-            
+            print("RIGHT")
+            rotateAction = SCNAction.rotateBy(x: 1.5708*2, y: 0, z: 0, duration: 0.4)
+            moveAction = SCNAction.moveBy(x: 0, y: 0, z: 1, duration: 0.4)
         } else if direction == .left {
+            print("LEFT")
+            rotateAction = SCNAction.rotateBy(x: -1.5708*2, y: 0, z: 0, duration: 0.4)
+            moveAction = SCNAction.moveBy(x: 0, y: 0, z: -1, duration: 0.4)
+        } else {
+            return
+        }
+        
+        let moveUpAction = SCNAction.customAction(duration: 0.4) { (node, time) in
+            //-16.79375(x-0.2)^2+0.67175
+            let position = (-16.79375*pow(time-0.2, 2)) + 0.67175
+            node.position.y = position
+        }
+        
+        super.node.runAction((SCNAction.group([rotateAction, moveAction, moveUpAction]))) {
+            //change reference point
+            
+            super.node.rotation = SCNVector4(0, 0, 0, 1.5708*2)
+            super.node.position.y = 0
+            
+            //move light
+            
+            //calculate emotions
+            
+            SCNAction.perform(#selector(self.calculateEmotion), on: Thread.main, with: nil, waitUntilDone: true)
+            
+            
+            
             
         }
+        
+        
     }
 }
 
@@ -334,7 +372,7 @@ class UserCharachter: BlockCharachter {
 
 
 class SceneViewController: NSViewController {
-    private var scene = Scene()
+    public let scene = Scene()
     
     override func loadView() {
         view = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 800))
@@ -350,75 +388,22 @@ class SceneViewController: NSViewController {
             ])
     }
     
-    
-    
     override func keyUp(with event: NSEvent) {
         let leftArrow: UInt16 = 0x7B
         let rightArrow: UInt16 = 0x7C
         let downArrow: UInt16 = 0x7D
         let upArrow: UInt16 = 0x7E
         
-        let userCharachterNode = scene.charachters[0].node
-//        let value: CGFloat = 100
-//        if event.keyCode == downArrow {
-//            print("DOWN")
-//            userCharachterNode.physicsBody?.applyTorque(SCNVector4(x: -1*value, y: 0, z: 0, w: 1), asImpulse: false)
-//        } else if event.keyCode == upArrow {
-//            print("FOWARD")
-//            userCharachterNode.physicsBody?.applyTorque(SCNVector4(x: value, y: 0, z: value, w: 1), asImpulse: false)
-//        } else if event.keyCode == rightArrow {
-//            print("RIGHT")
-//            userCharachterNode.physicsBody?.applyTorque(SCNVector4(x: 0, y: 0, z: value, w: 1), asImpulse: false)
-//        } else if event.keyCode == leftArrow {
-//            print("LEFT")
-//            userCharachterNode.physicsBody?.applyTorque(SCNVector4(x: 0, y: 0, z: -1*value, w: 1), asImpulse: false)
-//        } else {
-//            print("YOOO")
-//        }
-
-        let rotateAction: SCNAction
-        let moveAction: SCNAction
+        let userCharachter = self.scene.charachters[0] as! UserCharachter
         if event.keyCode == downArrow {
-            print("BACKWARDS")
-            rotateAction = SCNAction.rotateBy(x: 0, y: 0, z: 1.5708*2, duration: 0.4)
-            moveAction = SCNAction.moveBy(x: -1, y: 0, z: 0, duration: 0.4)
+            userCharachter.move(in: .back)
         } else if event.keyCode == upArrow {
-            print("FOWARD")
-            rotateAction = SCNAction.rotateBy(x: 0, y: 0, z: -1.5708*2, duration: 0.4)
-            moveAction = SCNAction.moveBy(x: 1, y: 0, z: 0, duration: 0.4)
+            userCharachter.move(in: .foward)
         } else if event.keyCode == rightArrow {
-            print("RIGHT")
-            rotateAction = SCNAction.rotateBy(x: 1.5708*2, y: 0, z: 0, duration: 0.4)
-            moveAction = SCNAction.moveBy(x: 0, y: 0, z: 1, duration: 0.4)
-            
+            userCharachter.move(in: .right)
         } else if event.keyCode == leftArrow {
-            print("LEFT")
-            rotateAction = SCNAction.rotateBy(x: -1.5708*2, y: 0, z: 0, duration: 0.4)
-            moveAction = SCNAction.moveBy(x: 0, y: 0, z: -1, duration: 0.4)
-        } else {
-            return
+            userCharachter.move(in: .left)
         }
-        
-        
-        
-        
-        let moveUpAction = SCNAction.customAction(duration: 0.4) { (node, time) in
-            //-16.79375(x-0.2)^2+0.67175
-            let position = (-16.79375*pow(time-0.2, 2)) + 0.67175
-            print(position)
-            node.position.y = position
-        }
-        userCharachterNode.runAction((SCNAction.group([rotateAction, moveAction, moveUpAction]))) {
-            
-            //change reference point
-            
-            userCharachterNode.rotation = SCNVector4(0, 0, 0, 1.5708*2)
-            userCharachterNode.position.y = 0
-            //move light
-            
-        }
-//
-        
     }
 }
 
