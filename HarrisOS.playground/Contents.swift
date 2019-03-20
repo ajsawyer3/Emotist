@@ -56,7 +56,7 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         
         //create & add charachters to scene (in unique location)
 //        let charachterCount = 99
-        let charachterCount = 2
+        let charachterCount = 68
         
         
         //make user charachter
@@ -143,31 +143,43 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         
         
             
-            
-        let newHappiness = calculateNewHappiness(map: self.makeArrayMap())
-        print(newHappiness)
-        
-        
-        
-        
+        let map = self.makeArrayMap()
+//        DispatchQueue.global(qos: .background).async {
+//
+//        }
+        let newHappiness = calculateNewHappiness(map: map)
+        charachter.happinessLevel = newHappiness
+//            print(newHappiness)
+      
     }
     
-    func calculateNewHappiness(map: [[BlockCharachter?]]) -> Double {
-        let userPosition = CGPoint(x: self.userCharachter.node.position.x, y: self.userCharachter.node.position.z)
+    func calculateNewHappiness(map: [[BlockCharachter?]], charachter: BlockCharachter) -> Double {
+//        let userPosition = CGPoint(x: charachter.node.position.x, y: charachter.node.position.z)
+        let userPositionInArray = CGPoint(x: <#T##CGFloat#>, y: <#T##CGFloat#>)
+        
         var newHappinessTotal = 0.0
         for x in 0...15 {
             for z in 0...15 {
                 if let otherCharachter = map[x][z] {
                     let otherPosition = CGPoint(x: otherCharachter.node.position.x, y: otherCharachter.node.position.z)
                     let distance = Double(pow(otherPosition.x-userPosition.x, 2)+pow(otherPosition.y-userPosition.y, 2)).squareRoot()
-                    let normalizedDistance = distance / 4
+                    
                     //use distance to calcualte
                     if distance < 4.0 {
-                        newHappinessTotal += normalizedDistance * otherCharachter.happinessLevel
+                        var multiplyFactor = 0.0
+                        if otherCharachter.happinessLevel < 0.5 {
+                            multiplyFactor = -1
+                        } else {
+                            multiplyFactor = 1
+                        }
+                        let normalizedEffectDistance = 1 - ((distance-1) / 4)
+                        print(normalizedEffectDistance)
+                        newHappinessTotal += multiplyFactor * normalizedEffectDistance * otherCharachter.happinessLevel
                     }
                 }
             }
         }
+        
         return newHappinessTotal
     }
     
