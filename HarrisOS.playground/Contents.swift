@@ -25,9 +25,6 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         sceneView.scene = self
         sceneView.allowsCameraControl = true
         sceneView.showsStatistics = true
-        sceneView.loops = true
-        
-        //        sceneView.debugOptions = [.showPhysicsShapes]
         
         //GEOMETRY
         //floor
@@ -61,6 +58,7 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         
         //make user charachter
         var previousLocations: [CGPoint] = [CGPoint(x: 7, y: 7)]
+//        userCharachter.node.rotation = SCNVector4(<#T##x: CGFloat##CGFloat#>, <#T##y: CGFloat##CGFloat#>, <#T##z: CGFloat##CGFloat#>, <#T##w: CGFloat##CGFloat#>)
         userCharachter.happinessLevel = 1
         self.rootNode.addChildNode(userCharachter.node)
         self.rootNode.addChildNode(userCharachter.lightNode)
@@ -165,9 +163,9 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         
             
 //        let map = self.makeArrayMap()
-        DispatchQueue.global(qos: .background).async {
+//        DispatchQueue.global(qos: .background).async {
             self.calculateNewHappiness(map: self.makeArrayMap())
-        }
+//        }
         
 //        charachter.happinessLevel = newHappiness
 
@@ -226,9 +224,8 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         }
         
         for charachter in charachters {
-            charachtersOnGrid[Int(charachter.node.position.x)][Int(charachter.node.position.z)] = charachter
+            charachtersOnGrid[Int(charachter.node.position.z)][Int(charachter.node.position.x)] = charachter
         }
-        
         
         print(charachtersOnGrid)
         
@@ -260,8 +257,6 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         let cameraNode = SCNNode()
         cameraNode.camera = camera
         
-        
-        
         let lookAtConstraint = SCNLookAtConstraint(target: target)
         lookAtConstraint.isGimbalLockEnabled = true
         
@@ -278,39 +273,11 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         return cameraNode
     }
     
-    
-    
-    
-    
-    
-    
-    
-    
     //idk what this is
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
-    
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 class BlockCharachter {
     var node: SCNNode
@@ -386,19 +353,19 @@ class UserCharachter: BlockCharachter {
         if direction == .back {
             print("BACKWARDS")
             rotateAction = SCNAction.rotateBy(x: 0, y: 0, z: -1.5708*2, duration: 0.4)
-            moveAction = SCNAction.moveBy(x: 1, y: 0, z: 0, duration: 0.4)
+            moveAction = SCNAction.moveBy(x: 0, y: 0, z: -1, duration: 0.4)
         } else if direction == .foward {
             print("FOWARD")
             rotateAction = SCNAction.rotateBy(x: 0, y: 0, z: 1.5708*2, duration: 0.4)
             moveAction = SCNAction.moveBy(x: 0, y: 0, z: 1, duration: 0.4)
         } else if direction == .right {
             print("RIGHT")
-            rotateAction = SCNAction.rotateBy(x: -1.5708*2, y: 0, z: 0, duration: 0.4)
+            rotateAction = SCNAction.rotateBy(x: 1.5708*2, y: 0, z: 0, duration: 0.4)
             moveAction = SCNAction.moveBy(x: 1, y: 0, z: 0, duration: 0.4)
         } else if direction == .left {
             print("LEFT")
-            rotateAction = SCNAction.rotateBy(x: 1.5708*2, y: 0, z: 0, duration: 0.4)
-            moveAction = SCNAction.moveBy(x: 0, y: 0, z: -1 , duration: 0.4)
+            rotateAction = SCNAction.rotateBy(x: -1.5708*2, y: 0, z: 0, duration: 0.4)
+            moveAction = SCNAction.moveBy(x: -1, y: 0, z: 0 , duration: 0.4)
         } else {
             return
         }
@@ -408,18 +375,19 @@ class UserCharachter: BlockCharachter {
             let position = (-16.79375*pow(time-0.2, 2)) + 0.67175
             node.position.y = position
         }
-        
-        super.node.runAction((SCNAction.group([rotateAction, moveAction, moveUpAction]))) {
+        //rotateAction,
+        super.node.runAction((SCNAction.group([moveAction, moveUpAction]))) {
             //change reference point
             
-            
+//            super.node.rotation = SCNVector4(0, 0, 0, 1.5708*2)
+//            super.node.position.y = 0
             
             //move light
             
             //calculate emotions
-            vc.scene.calculateEmotions()
-//            super.node.rotation = SCNVector4(0, 0, 0, 1.5708*2)
-//            super.node.position.y = 0
+            DispatchQueue.global(qos: .background).async {
+                vc.scene.calculateEmotions()
+            }
             //go through each charachter and calculate emotion based on array
         }
     }
