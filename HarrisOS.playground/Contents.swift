@@ -64,7 +64,7 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         charachters.append(userCharachter)
         
         
-        let charachterCount = 15
+        let charachterCount = 75
         for x in 0...charachterCount {
             let fieldSize = 16
             
@@ -159,13 +159,30 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
     
     func calculateEmotions() {
 //        DispatchQueue.global(qos: .background).async {
-            self.calculateNewHappiness(map: self.makeArrayMap())
+            let originalMap = self.makeArrayMap()
+            let newMap = self.calculateNewHappiness(map: originalMap)
+            self.assignNewMap(newMap: newMap)
+        
+//            self.assignNewMap(newMap: self.calculateNewHappiness(map: self.makeArrayMap()))
 //        }
     }
     
-    func calculateNewHappiness(map: [[BlockCharachter?]]) {
+    func assignNewMap(newMap: [[Double?]]) {
+        let flatMap = newMap.flatMap { $0 }.compactMap { $0 }
+        print(flatMap)
+        for i in 0...(charachters.count-1) {
+            let newValue = flatMap[i]
+            charachters[i].happinessLevel = newValue
+        }
+    }
+    
+    func calculateNewHappiness(map: [[Double?]]) ->  [[Double?]]{
+        var newMap: [[Double?]] = []
+        
         for x in 0...15 {
+            newMap.append([])
             for y in 0...15 {
+                newMap[x].append(map[x][y])
                 
                 if let refCharachter = map[x][y] {
                     var happinessTotal = 0.0
@@ -177,25 +194,26 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
                             let row = map[rowSelection]
                             for x2 in -1...1 {
                                 if row.indices.contains(x + x2) {
-                                    guard let item = row[x+x2] else { break }
-                                    happinessTotal += item.happinessLevel
+                                    guard let happinessValue = row[x+x2] else { break }
+                                    happinessTotal += happinessValue
                                     contributorCount += 1
                                 }
                             }
                         }
 
                         if contributorCount != 0 {
-                            refCharachter.happinessLevel = ((happinessTotal / contributorCount) + refCharachter.happinessLevel)/2
+                            newMap[x][y] = (((happinessTotal / contributorCount) + refCharachter)/2)
                         }
                     }
                 }
             }
         }
+        return newMap
     }
     
     
-    func makeArrayMap() -> [[BlockCharachter?]] {
-        var charachtersOnGrid: [[BlockCharachter?]] = []
+    func makeArrayMap() -> [[Double?]] {
+        var charachtersOnGrid: [[Double?]] = []
         for x in 0...15 {
             charachtersOnGrid.append([])
             for _ in 0...15 {
@@ -205,7 +223,7 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         
         
         for charachter in charachters {
-            charachtersOnGrid[Int(charachter.node.position.z-1)][Int(charachter.node.position.x-1)] = charachter
+            charachtersOnGrid[Int(charachter.node.position.z-1)][Int(charachter.node.position.x-1)] = charachter.happinessLevel
         }
         
         return charachtersOnGrid
@@ -265,14 +283,9 @@ class BlockCharachter {
     
     var happinessLevel = 0.5 {
         didSet {
-//            print("DID SET")
             let hue: CGFloat = CGFloat(happinessLevel * 0.138)
             let newColor = NSColor(hue: hue, saturation: 1, brightness: 1, alpha: 1)
-            
-//            node.geometry?.firstMaterial?.diffuse.contents = newColor
-                self.changeColorTo(newColor)
-            
-            
+            changeColorTo(newColor)
         }
     }
     
