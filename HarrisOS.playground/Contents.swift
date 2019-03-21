@@ -167,9 +167,13 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
                     for x2 in 0...15 {
                         for z2 in 0...15 {
                             //if there is a charachter for the second reference & the first reference is not the second reference
-                            if let secondaryCharachter = map[x2][z2], (x1 != x2 && z1 != z2) {
-                                let distance = Double(pow(Double(x2-x1), 2)+pow(Double(z2-z1), 2)).squareRoot()
-
+                            //, (x1 != x2 && z1 != z2)
+                            if let secondaryCharachter = map[x2][z2] {
+                                print("x1, y1 = (\(x1, z1))")
+                                print("x2, y2 = (\(x2, z2))")
+                                let distance = Double(pow(Double((x2+1)-(x1+1)), 2)+pow(Double((z2+1)-(z1+1)), 2)).squareRoot()
+                                print("distance: \(distance)")
+                                
                                 //use distance to calcualte
                                 if distance <= 4.0 {
                                     var multiplyFactor: Double
@@ -182,9 +186,9 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
                                     let normalizedEffectDistance = 1 - ((distance+1) / 4)
 
                                     refCharachterHappiness += multiplyFactor * normalizedEffectDistance * secondaryCharachter.happinessLevel
-                                    print("distance: \(distance)")
-                                    print("normalized distance: \(normalizedEffectDistance)")
+                                    
                                 }
+                                
                             }
                         }
                     }
@@ -363,8 +367,8 @@ class UserCharachter: BlockCharachter {
             let position = (-16.79375*pow(time-0.2, 2)) + 0.67175
             node.position.y = position
         }
-        
-        super.node.runAction((SCNAction.group([moveAction, moveUpAction, rotateAction]))) {
+        //moveUpAction, rotateAction
+        super.node.runAction((SCNAction.group([moveAction]))) {
             //change reference point
             
 //            super.node.rotation = SCNVector4(0, 0, 0, 1.5708*2)
