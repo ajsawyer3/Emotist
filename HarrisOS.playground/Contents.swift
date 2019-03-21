@@ -64,7 +64,7 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         charachters.append(userCharachter)
         
         
-        let charachterCount = 70
+        let charachterCount = 15
         for x in 0...charachterCount {
             let fieldSize = 16
             
@@ -80,7 +80,7 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
             //make new charachter
             let newCharachter = BlockCharachter(position: SCNVector3(uniquePoint.x, 0, uniquePoint.y))
             charachters.append(newCharachter)
-            newCharachter.happinessLevel = 0.5
+            newCharachter.happinessLevel = Double.random(in: 0...1)
             self.rootNode.addChildNode(newCharachter.node)
             self.rootNode.addChildNode(newCharachter.lightNode)
             
@@ -158,54 +158,39 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
     }
     
     func calculateEmotions() {
-        DispatchQueue.global(qos: .background).async {
-            self.calculateNewHappiness()
-        }
+//        DispatchQueue.global(qos: .background).async {
+            self.calculateNewHappiness(map: self.makeArrayMap())
+//        }
     }
     
-    
-    func calculateNewHappiness() {
-        for refCharachter in charachters {
-            var secondaryCharachterHappinessEffect = 0.0
-            let refCharachterPostion = SCNVector3ToGLKVector3(refCharachter.node.position)
-//            print("ref: \(refCharachterPostion.v)")
-            
-            for secondaryCharachter in charachters {
-                let secondaryCharachterPosition = SCNVector3ToGLKVector3(secondaryCharachter.node.position)
-//                print("sec: \(secondaryCharachterPosition.v)")
+    func calculateNewHappiness(map: [[BlockCharachter?]]) {
+        for x in 0...15 {
+            for y in 0...15 {
                 
-                let distance = Double(GLKVector3Distance(refCharachterPostion, secondaryCharachterPosition))
+                if let refCharachter = map[x][y] {
+                    var happinessTotal = 0.0
+                    var contributorCount = 0.0
 
-                if distance <= 3.0 && distance != 0 {
-//                    print(distance)
-                    var multiplyFactor: Double
-                    if secondaryCharachter.happinessLevel < refCharachter.happinessLevel {
-                        multiplyFactor = -1.0
-                    } else {
-                        multiplyFactor = 1
+                    for y2 in -1...1 {
+                        let rowSelection = y+y2
+                        if map.indices.contains(rowSelection) {
+                            let row = map[rowSelection]
+                            for x2 in -1...1 {
+                                if row.indices.contains(x + x2) {
+                                    guard let item = row[x+x2] else { break }
+                                    happinessTotal += item.happinessLevel
+                                    contributorCount += 1
+                                }
+                            }
+                        }
+
+                        if contributorCount != 0 {
+                            refCharachter.happinessLevel = ((happinessTotal / contributorCount) + refCharachter.happinessLevel)/2
+                        }
                     }
-                    
-                    let normalizedEffectDistance = 1 - ((distance-1) / 2)
-                    
-                    secondaryCharachterHappinessEffect += (multiplyFactor * normalizedEffectDistance * secondaryCharachter.happinessLevel)
                 }
             }
-            if secondaryCharachterHappinessEffect != 0 {
-                if secondaryCharachterHappinessEffect > 1 {
-                    refCharachter.happinessLevel = 0.138
-                } else if secondaryCharachterHappinessEffect < 0 {
-                    refCharachter.happinessLevel = 0
-                } else {
-                    refCharachter.happinessLevel = secondaryCharachterHappinessEffect
-                }
-            }
-            
-            
         }
-//        print(userCharachter.happinessLevel)
-//        for c in charachters {
-//            print(c.happinessLevel)
-//        }
     }
     
     
@@ -218,11 +203,10 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
             }
         }
         
-        for charachter in charachters {
-            charachtersOnGrid[Int(charachter.node.position.z)][Int(charachter.node.position.x)] = charachter
-        }
         
-        //        print(charachtersOnGrid)
+        for charachter in charachters {
+            charachtersOnGrid[Int(charachter.node.position.z-1)][Int(charachter.node.position.x-1)] = charachter
+        }
         
         return charachtersOnGrid
     }
@@ -281,9 +265,14 @@ class BlockCharachter {
     
     var happinessLevel = 0.5 {
         didSet {
+//            print("DID SET")
             let hue: CGFloat = CGFloat(happinessLevel * 0.138)
             let newColor = NSColor(hue: hue, saturation: 1, brightness: 1, alpha: 1)
-            changeColorTo(newColor)
+            
+//            node.geometry?.firstMaterial?.diffuse.contents = newColor
+                self.changeColorTo(newColor)
+            
+            
         }
     }
     
@@ -385,7 +374,10 @@ class UserCharachter: BlockCharachter {
             //move light
             
             //calculate emotions
-            vc.scene.calculateEmotions()
+            DispatchQueue.global(qos: .background).async {
+                vc.scene.calculateEmotions()
+            }
+            
         }
     }
 }
