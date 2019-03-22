@@ -16,7 +16,8 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
     var sceneView: SCNView = SCNView(frame: CGRect(x: 0, y: 0, width: 400, height: 800))
     public var charachters: [BlockCharachter] = []
     
-    let userCharachter = UserCharachter(position: SCNVector3(x: 10, y: 0.5, z: 10), happinessLevel: 0)
+//    let userCharachter = UserCharachter(position: SCNVector3(x: 1, y: 0, z: 1), happinessLevel: 0)
+    let userCharachter = UserCharachter(position: SCNVector3(x: 18, y: 0, z: 18), happinessLevel: 0)
     
     override init() {
         super.init()
@@ -93,17 +94,17 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         
         
         //make new charachter
-        let test1newCharachter = BlockCharachter(position: SCNVector3(0, 0.5, 0), happinessLevel: 1)
+        let test1newCharachter = BlockCharachter(position: SCNVector3(0, 0, 0), happinessLevel: 1)
         charachters.append(test1newCharachter)
         self.rootNode.addChildNode(test1newCharachter.node)
         self.rootNode.addChildNode(test1newCharachter.lightNode)
         
-        let test1pnewCharachter = BlockCharachter(position: SCNVector3(0, 0.5, 1), happinessLevel: 1)
-        charachters.append(test1pnewCharachter)
-        self.rootNode.addChildNode(test1pnewCharachter.node)
-        self.rootNode.addChildNode(test1pnewCharachter.lightNode)
+//        let test1pnewCharachter = BlockCharachter(position: SCNVector3(0, 0, 1), happinessLevel: 1)
+//        charachters.append(test1pnewCharachter)
+//        self.rootNode.addChildNode(test1pnewCharachter.node)
+//        self.rootNode.addChildNode(test1pnewCharachter.lightNode)
         
-        let test2newCharachter = BlockCharachter(position: SCNVector3(19, 0.5, 19), happinessLevel: 1)
+        let test2newCharachter = BlockCharachter(position: SCNVector3(19, 0, 19), happinessLevel: 1)
         charachters.append(test2newCharachter)
         self.rootNode.addChildNode(test2newCharachter.node)
         self.rootNode.addChildNode(test2newCharachter.lightNode)
@@ -154,11 +155,6 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
     }
     
     func calculateEmotions() {
-        //- make 20 by 20
-        //pass charachter insterad of double
-        //only calc 4 surrounding spots
-        //use 0 and 20 insead of contains
-        
         DispatchQueue.global(qos: .background).async {
             let originalMap = self.makeArrayMap()
             let newMap = self.calculateNewHappiness(map: originalMap)
@@ -185,46 +181,54 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
     
     func calculateNewHappiness(map: [[BlockCharachter?]]) -> [[Double?]] {
         var charachtersUpdatedLevels: [[Double?]] = []
-        for x in 0...19 {
+        for y in 0...19 {
             charachtersUpdatedLevels.append([])
-            for y in 0...19 {
+            for x in 0...19 {
                 //make charachtersUpdatedLevels = to currentlevels
-                if let original = map[x][y] {
-                    charachtersUpdatedLevels[x].append(original.happinessLevel)
+                if let original = map[y][x] {
+                    charachtersUpdatedLevels[y].append(original.happinessLevel)
                 } else {
-                    charachtersUpdatedLevels[x].append(nil)
+                    charachtersUpdatedLevels[y].append(nil)
                 }
                 
                 //if refCharachter is not nil
-                if let refCharachter = map[x][y] {
+                if let refCharachter = map[y][x] {
                     var happinessTotal = 0.0
                     var contributorCount = 0.0
-                    
-                    
-                    
-                    
-                    //                    x, y+1
-                    //                    x, y-1
-                    //                    x+1, y
-                    //                    x-1, y
-                    let pointLevelsToCheck = [-1, 1]
-                    for x2 in pointLevelsToCheck {
-                        for y2 in pointLevelsToCheck {
-                            //check if surrounding block is usable
-                            if (x+x2 >= 0 && x+x2 <= 19) && (y+y2 >= 0 && y+y2 <= 19) {
-                                if let secondayLocation = map[x+x2][y+y2] {
-                                    happinessTotal += secondayLocation.happinessLevel
-                                    contributorCount += 1
-                                }
-                            }
-                        }
+
+//                    x, y+1
+//                    x, y-1
+//                    x+1, y
+//                    x-1, y
+
+                    // top item
+                    if y - 1 >= 0, let topBlock = map[y-1][x] {
+                        happinessTotal += topBlock.happinessLevel
+                        contributorCount += 1
                     }
-                    
-                    
+
+                    // left item
+                    if x - 1 >= 0, let leftBlock = map[y][x - 1] {
+                        happinessTotal += leftBlock.happinessLevel
+                        contributorCount += 1
+                    }
+
+                    // right item
+                    if x + 1 <= 19, let rightBlock = map[y][x + 1] {
+                        happinessTotal += rightBlock.happinessLevel
+                        contributorCount += 1
+                    }
+
+                    // bottom item
+                    if y + 1 <= 19, let bottomItem = map[y + 1][x] {
+                        happinessTotal += bottomItem.happinessLevel
+                        contributorCount += 1
+                    }
+
+
                     if contributorCount != 0 {
                         let influenceOfNeighbors = (happinessTotal / contributorCount) * 0.5
                         let influenceOfSelf = refCharachter.happinessLevel * 0.5
-                        print((influenceOfNeighbors + influenceOfSelf))
                         charachtersUpdatedLevels[y][x] = (influenceOfNeighbors + influenceOfSelf)
                     }
                 }
@@ -316,8 +320,8 @@ class BlockCharachter {
         let geometry = SCNBox(width: 0.95, height: 0.95, length: 0.95, chamferRadius: 0.26)
         
         node = SCNNode(geometry: geometry)
+//        node.pivot = SCNMatrix4MakeTranslation(0, 0, 0)
         node.position = position
-        node.pivot = SCNMatrix4MakeTranslation(0, 0.5, 0)
         self.happinessLevel = happinessLevel
         
         //physics
@@ -403,10 +407,8 @@ class UserCharachter: BlockCharachter {
             node.position.y = position
         }
         //moveUpAction, rotateAction
-        self.node.runAction((SCNAction.group([moveAction, moveUpAction, rotateAction]))) {
+        self.node.runAction((SCNAction.group([moveAction, moveUpAction]))) {
             //change reference point
-            
-            
             
             //move light
             
