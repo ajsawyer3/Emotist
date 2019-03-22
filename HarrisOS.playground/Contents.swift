@@ -11,12 +11,9 @@ enum Direction {
 }
 
 class Scene: SCNScene, SCNSceneRendererDelegate {
-    
-    
     var sceneView: SCNView = SCNView(frame: CGRect(x: 0, y: 0, width: 400, height: 800))
     public var charachters: [BlockCharachter] = []
     
-//    let userCharachter = UserCharachter(position: SCNVector3(x: 1, y: 0, z: 1), happinessLevel: 0)
     let userCharachter = UserCharachter(position: SCNVector3(x: 8, y: 0, z: 8), happinessLevel: 0)
     
     override init() {
@@ -117,29 +114,6 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         cameraNode.position = userCharachter.node.position
         rootNode.addChildNode(cameraNode)
         
-        
-        //        test move user object
-        //        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 1) {
-        //            userCharachter.node.runAction(SCNAction.moveBy(x: 15, y: 0, z: 10, duration: 50))
-        //
-        //            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 3) {
-        //                for x in 0...99 {
-        //                    self.charachters[x].calculateEmotionLevel(charachters: self.charachters)
-        //                }
-        //                DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 3) {
-        //                    for x in 0...99 {
-        //                        self.charachters[x].calculateEmotionLevel(charachters: self.charachters)
-        //                    }
-        //                    userCharachter.happinessLevel = 1
-        //                    DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 3) {
-        //                        for x in 0...99 {
-        //                            self.charachters[x].calculateEmotionLevel(charachters: self.charachters)
-        //                        }
-        //                    }
-        //                }
-        //            }
-        //        }
-        
         //lighting
         let environment = NSImage(named: "hdri.jpg")
         self.lightingEnvironment.contents = environment
@@ -151,10 +125,12 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         
         
         //initally run
-        //        calculateEmotions()
+//        calculateEmotions()
+        vc.makeTimer()
     }
     
-    func calculateEmotions() {
+    @objc func calculateEmotions() {
+        print("CALCULATING")
         DispatchQueue.global(qos: .background).async {
             let originalMap = self.makeArrayMap()
             let newMap = self.calculateNewHappiness(map: originalMap)
@@ -162,21 +138,22 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         }
     }
     
-    func assignNewMap(newMap: [[Double?]]) {
-        let flatMap = newMap.flatMap { $0 }.compactMap { $0 }
-        
-        for i in 0...(charachters.count-1) {
-            let newValue = flatMap[i]
-            let charachter = charachters[i]
-            
-            //*0.135
-            let hue: CGFloat = CGFloat(charachter.happinessLevel) * 0.145
-            let newColor = NSColor(hue: hue, saturation: 1, brightness: 1, alpha: 1)
-            DispatchQueue.main.async {
-                charachter.changeColorTo(newColor)
+    func makeArrayMap() -> [[BlockCharachter?]] {
+        var charachtersOnGrid: [[BlockCharachter?]] = []
+        for x in 0...19 {
+            charachtersOnGrid.append([])
+            for _ in 0...19 {
+                charachtersOnGrid[x].append(nil)
             }
-            
         }
+        
+        
+        for charachter in charachters {
+            charachtersOnGrid[Int(round(charachter.node.position.z))][Int(round(charachter.node.position.x))] = charachter
+        }
+        
+        
+        return charachtersOnGrid
     }
     
     func calculateNewHappiness(map: [[BlockCharachter?]]) -> [[Double?]] {
@@ -246,24 +223,28 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         return charachtersUpdatedLevels
     }
     
-    
-    func makeArrayMap() -> [[BlockCharachter?]] {
-        var charachtersOnGrid: [[BlockCharachter?]] = []
-        for x in 0...19 {
-            charachtersOnGrid.append([])
-            for _ in 0...19 {
-                charachtersOnGrid[x].append(nil)
+    func assignNewMap(newMap: [[Double?]]) {
+        let flatMap = newMap.flatMap { $0 }.compactMap { $0 }
+        
+        for i in 0...(charachters.count-1) {
+            let newValue = flatMap[i]
+            let charachter = charachters[i]
+            
+            //set newly calculated value to happinessLevel
+            charachter.happinessLevel = newValue
+            
+            //*0.135
+            let hue: CGFloat = CGFloat(charachter.happinessLevel) * 0.145
+            let newColor = NSColor(hue: hue, saturation: 1, brightness: 1, alpha: 1)
+            DispatchQueue.main.async {
+                charachter.changeColorTo(newColor)
             }
+            
         }
-        
-        
-        for charachter in charachters {
-            charachtersOnGrid[Int(round(charachter.node.position.z))][Int(round(charachter.node.position.x))] = charachter
-        }
-        
-        
-        return charachtersOnGrid
     }
+    
+    
+    
     
     func createCameraNode(following target: SCNNode) -> SCNNode {
         let camera = SCNCamera()
@@ -361,7 +342,6 @@ class BlockCharachter {
     
     
     func changeColorTo(_ newColor: NSColor) {
-        
         SCNTransaction.begin()
         SCNTransaction.animationDuration = 1
         self.node.geometry?.firstMaterial?.diffuse.contents = newColor
@@ -385,9 +365,10 @@ class BlockCharachter {
 
 class UserCharachter: BlockCharachter {
     override init(position: SCNVector3, happinessLevel: Double) {
-        super.init(position:osition, happinessLevel: happinessLevel)
+        super.init(position: position, happinessLevel: happinessLevel)
         isUserCharachter = true
     }
+    
     func move(in direction: Direction) {
         let rotateAction: SCNAction
         let moveAction: SCNAction
@@ -424,9 +405,10 @@ class UserCharachter: BlockCharachter {
             
             //calculate emotions
             
-            vc.scene.calculateEmotions()
             
+//            vc.scene.calculateEmotions()
             
+            vc.makeTimer()
         }
     }
 }
@@ -450,6 +432,13 @@ class UserCharachter: BlockCharachter {
 class SceneViewController: NSViewController {
     public let scene = Scene()
     
+    var timer: Timer?
+    
+    let leftArrow: UInt16 = 0x7B
+    let rightArrow: UInt16 = 0x7C
+    let downArrow: UInt16 = 0x7D
+    let upArrow: UInt16 = 0x7E
+    
     override func loadView() {
         view = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 800))
         
@@ -464,12 +453,19 @@ class SceneViewController: NSViewController {
             ])
     }
     
+    override func keyDown(with event: NSEvent) {
+        print("CANCEL TIMER")
+        if event.keyCode == downArrow || event.keyCode == upArrow || event.keyCode
+            == rightArrow || event.keyCode == leftArrow {
+            
+            guard let timer = timer else { return }
+            if timer.isValid {
+                timer.invalidate()
+            }
+        }
+    }
+    
     override func keyUp(with event: NSEvent) {
-        let leftArrow: UInt16 = 0x7B
-        let rightArrow: UInt16 = 0x7C
-        let downArrow: UInt16 = 0x7D
-        let upArrow: UInt16 = 0x7E
-        
         let userCharachter = self.scene.charachters[0] as! UserCharachter
         if event.keyCode == downArrow {
             userCharachter.move(in: .back)
@@ -479,7 +475,13 @@ class SceneViewController: NSViewController {
             userCharachter.move(in: .right)
         } else if event.keyCode == leftArrow {
             userCharachter.move(in: .left)
+        } else {
+            return
         }
+    }
+    
+    func makeTimer() {
+        timer = Timer.scheduledTimer(timeInterval: 5, target: self, selector: #selector(vc.scene.calculateEmotions), userInfo: nil, repeats: false)
     }
 }
 
