@@ -16,7 +16,7 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
     var sceneView: SCNView = SCNView(frame: CGRect(x: 0, y: 0, width: 400, height: 800))
     public var charachters: [BlockCharachter] = []
     
-    let userCharachter = UserCharachter(position: SCNVector3(x: 8, y: 0, z: 8))
+    let userCharachter = UserCharachter(position: SCNVector3(x: 10, y: 0.5, z: 10), happinessLevel: 0)
     
     override init() {
         super.init()
@@ -57,58 +57,54 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         
         
         //make user charachter
-        var previousLocations: [CGPoint] = [CGPoint(x: 8, y: 8)]
-        userCharachter.happinessLevel = 0.5
+        var previousLocations: [CGPoint] = [CGPoint(x: 9, y: 9)]
         self.rootNode.addChildNode(userCharachter.node)
         self.rootNode.addChildNode(userCharachter.lightNode)
         charachters.append(userCharachter)
         
         
         let charachterCount = 75
-//        for x in 0...charachterCount {
-//            let fieldSize = 16
-//
-//            var uniquePoint = CGPoint(x: -1, y: -1)
-//            while previousLocations.contains(uniquePoint) || uniquePoint.x == -1 || (uniquePoint.x == 8 && uniquePoint.y == 8){
-//                let randomX = Int.random(in: 1...fieldSize)
-//                let randomZ = Int.random(in: 1...fieldSize)
-//                uniquePoint = CGPoint(x: randomX, y: randomZ)
-//            }
-//
-//            previousLocations.append(uniquePoint)
-//
-//            //make new charachter
-//            let newCharachter = BlockCharachter(position: SCNVector3(uniquePoint.x, 0, uniquePoint.y))
-//            charachters.append(newCharachter)
-//            newCharachter.happinessLevel = Double.random(in: 0...1)
-//            self.rootNode.addChildNode(newCharachter.node)
-//            self.rootNode.addChildNode(newCharachter.lightNode)
-//
-//
-//            let random1 = CGFloat.random(in: 0...255)
-//            let random2 = CGFloat.random(in: 0...255)
-//            let random3 = CGFloat.random(in: 0...255)
-//            self.charachters[x].changeColorTo(NSColor(red: random1/255, green: random2/255, blue: random3/255, alpha: 1))
-//        }
+        //        for x in 0...charachterCount {
+        //            let fieldSize = 16
+        //
+        //            var uniquePoint = CGPoint(x: -1, y: -1)
+        //            while previousLocations.contains(uniquePoint) || uniquePoint.x == -1 || (uniquePoint.x == 8 && uniquePoint.y == 8){
+        //                let randomX = Int.random(in: 1...fieldSize)
+        //                let randomZ = Int.random(in: 1...fieldSize)
+        //                uniquePoint = CGPoint(x: randomX, y: randomZ)
+        //            }
+        //
+        //            previousLocations.append(uniquePoint)
+        //
+        //            //make new charachter
+        //            let newCharachter = BlockCharachter(position: SCNVector3(uniquePoint.x, 0, uniquePoint.y))
+        //            charachters.append(newCharachter)
+        //            newCharachter.happinessLevel = Double.random(in: 0...1)
+        //            self.rootNode.addChildNode(newCharachter.node)
+        //            self.rootNode.addChildNode(newCharachter.lightNode)
+        //
+        //
+        //            let random1 = CGFloat.random(in: 0...255)
+        //            let random2 = CGFloat.random(in: 0...255)
+        //            let random3 = CGFloat.random(in: 0...255)
+        //            self.charachters[x].changeColorTo(NSColor(red: random1/255, green: random2/255, blue: random3/255, alpha: 1))
+        //        }
         
         
         
         //make new charachter
-        let test1newCharachter = BlockCharachter(position: SCNVector3(0, 0, 0))
+        let test1newCharachter = BlockCharachter(position: SCNVector3(0, 0.5, 0), happinessLevel: 1)
         charachters.append(test1newCharachter)
-        test1newCharachter.happinessLevel = 1
         self.rootNode.addChildNode(test1newCharachter.node)
         self.rootNode.addChildNode(test1newCharachter.lightNode)
-
-        let test1pnewCharachter = BlockCharachter(position: SCNVector3(1, 0, 0))
+        
+        let test1pnewCharachter = BlockCharachter(position: SCNVector3(0, 0.5, 1), happinessLevel: 1)
         charachters.append(test1pnewCharachter)
-        test1pnewCharachter.happinessLevel = 1
         self.rootNode.addChildNode(test1pnewCharachter.node)
         self.rootNode.addChildNode(test1pnewCharachter.lightNode)
-
-        let test2newCharachter = BlockCharachter(position: SCNVector3(15, 0, 15))
+        
+        let test2newCharachter = BlockCharachter(position: SCNVector3(19, 0.5, 19), happinessLevel: 1)
         charachters.append(test2newCharachter)
-        test2newCharachter.happinessLevel = 1
         self.rootNode.addChildNode(test2newCharachter.node)
         self.rootNode.addChildNode(test2newCharachter.lightNode)
         
@@ -154,74 +150,109 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         
         
         //initally run
-        calculateEmotions()
+        //        calculateEmotions()
     }
     
     func calculateEmotions() {
+        //- make 20 by 20
+        //pass charachter insterad of double
+        //only calc 4 surrounding spots
+        //use 0 and 20 insead of contains
+        
         DispatchQueue.global(qos: .background).async {
             let originalMap = self.makeArrayMap()
-//            let newMap = self.calculateNewHappiness(map: originalMap)
-//            self.assignNewMap(newMap: newMap)
+            let newMap = self.calculateNewHappiness(map: originalMap)
+            self.assignNewMap(newMap: newMap)
         }
     }
     
     func assignNewMap(newMap: [[Double?]]) {
         let flatMap = newMap.flatMap { $0 }.compactMap { $0 }
+        
         for i in 0...(charachters.count-1) {
             let newValue = flatMap[i]
-            charachters[i].happinessLevel = newValue
+            let charachter = charachters[i]
+            
+            //*0.135
+            let hue: CGFloat = CGFloat(charachter.happinessLevel) * 0.135
+            let newColor = NSColor(hue: hue, saturation: 1, brightness: 1, alpha: 1)
+            DispatchQueue.main.async {
+                charachter.changeColorTo(newColor)
+            }
+            
         }
     }
     
-    func calculateNewHappiness(map: [[Double?]]) ->  [[Double?]]{
-        var newMap: [[Double?]] = []
-        
-        for x in 0...15 {
-            newMap.append([])
-            for y in 0...15 {
-                newMap[x].append(map[x][y])
+    func calculateNewHappiness(map: [[BlockCharachter?]]) -> [[Double?]] {
+        var charachtersUpdatedLevels: [[Double?]] = []
+        for x in 0...19 {
+            charachtersUpdatedLevels.append([])
+            for y in 0...19 {
+                //make charachtersUpdatedLevels = to currentlevels
+                if let original = map[x][y] {
+                    charachtersUpdatedLevels[x].append(original.happinessLevel)
+                } else {
+                    charachtersUpdatedLevels[x].append(nil)
+                }
                 
+                //if refCharachter is not nil
                 if let refCharachter = map[x][y] {
                     var happinessTotal = 0.0
                     var contributorCount = 0.0
-
-                    for y2 in -1...1 {
-                        let rowSelection = y+y2
-                        if map.indices.contains(rowSelection) {
-                            let row = map[rowSelection]
-                            for x2 in -1...1 {
-                                if row.indices.contains(x + x2) {
-                                    guard let happinessValue = row[x+x2] else { break }
-                                    happinessTotal += happinessValue
+                    
+                    
+                    
+                    
+                    //                    x, y+1
+                    //                    x, y-1
+                    //                    x+1, y
+                    //                    x-1, y
+                    let pointLevelsToCheck = [-1, 1]
+                    for x2 in pointLevelsToCheck {
+                        for y2 in pointLevelsToCheck {
+                            //check if surrounding block is usable
+                            if (x+x2 >= 0 && x+x2 <= 19) && (y+y2 >= 0 && y+y2 <= 19) {
+                                if let secondayLocation = map[x+x2][y+y2] {
+                                    happinessTotal += secondayLocation.happinessLevel
                                     contributorCount += 1
                                 }
                             }
                         }
-
-                        if contributorCount != 0 {
-                            newMap[x][y] = (((happinessTotal / contributorCount) + refCharachter)/2)
-                        }
+                    }
+                    
+                    
+                    if contributorCount != 0 {
+                        let influenceOfNeighbors = (happinessTotal / contributorCount) * 0.5
+                        let influenceOfSelf = refCharachter.happinessLevel * 0.5
+                        print((influenceOfNeighbors + influenceOfSelf))
+                        charachtersUpdatedLevels[y][x] = (influenceOfNeighbors + influenceOfSelf)
                     }
                 }
             }
         }
-        return newMap
+        
+        for row in charachtersUpdatedLevels {
+            print(row)
+        }
+        
+        return charachtersUpdatedLevels
     }
     
     
-    func makeArrayMap() -> [[Double?]] {
-        var charachtersOnGrid: [[Double?]] = []
-        for x in 0...15 {
+    func makeArrayMap() -> [[BlockCharachter?]] {
+        var charachtersOnGrid: [[BlockCharachter?]] = []
+        for x in 0...19 {
             charachtersOnGrid.append([])
-            for _ in 0...15 {
+            for _ in 0...19 {
                 charachtersOnGrid[x].append(nil)
             }
         }
         
         
         for charachter in charachters {
-            charachtersOnGrid[Int(charachter.node.position.z-1)][Int(charachter.node.position.x-1)] = charachter.happinessLevel
+            charachtersOnGrid[Int(round(charachter.node.position.z))][Int(round(charachter.node.position.x))] = charachter
         }
+        
         
         return charachtersOnGrid
     }
@@ -278,20 +309,16 @@ class BlockCharachter {
     
     let lightNode = SCNNode()
     
-    var happinessLevel = 0.5 {
-        didSet {
-            let hue: CGFloat = CGFloat(happinessLevel)
-            let newColor = NSColor(hue: hue, saturation: 1, brightness: 1, alpha: 1)
-            changeColorTo(newColor)
-        }
-    }
+    var happinessLevel = 0.0
     
-    init(position: SCNVector3) {
+    init(position: SCNVector3, happinessLevel: Double) {
         
         let geometry = SCNBox(width: 0.95, height: 0.95, length: 0.95, chamferRadius: 0.26)
         
         node = SCNNode(geometry: geometry)
         node.position = position
+        node.pivot = SCNMatrix4MakeTranslation(0, 0.5, 0)
+        self.happinessLevel = happinessLevel
         
         //physics
         //        node.physicsBody = SCNPhysicsBody(type: .dynamic, shape: SCNPhysicsShape(geometry: geometry, options: nil))
@@ -324,11 +351,13 @@ class BlockCharachter {
     
     
     func changeColorTo(_ newColor: NSColor) {
+        
         SCNTransaction.begin()
         SCNTransaction.animationDuration = 1
-        node.geometry?.firstMaterial?.diffuse.contents = newColor
-        lightNode.light?.color = newColor
+        self.node.geometry?.firstMaterial?.diffuse.contents = newColor
+        self.lightNode.light?.color = newColor
         SCNTransaction.commit()
+        
     }
 }
 
@@ -350,41 +379,40 @@ class UserCharachter: BlockCharachter {
         let moveAction: SCNAction
         if direction == .back {
             print("BACKWARDS")
-            rotateAction = SCNAction.rotateBy(x: 0, y: 0, z: 1.5708*2, duration: 0.4)
-            moveAction = SCNAction.moveBy(x: 0, y: 0, z: 1, duration: 0.4)
+            rotateAction = SCNAction.rotateBy(x: 1.5708*2, y: 0, z: 0, duration: 0.2)
+            moveAction = SCNAction.moveBy(x: 0, y: 0, z: 1, duration: 0.2)
         } else if direction == .foward {
             print("FOWARD")
-            rotateAction = SCNAction.rotateBy(x: 0, y: 0, z: -1.5708*2, duration: 0.4)
-            moveAction = SCNAction.moveBy(x: 0, y: 0, z: -1, duration: 0.4)
+            rotateAction = SCNAction.rotateBy(x: -1.5708*2, y: 0, z: 0, duration: 0.2)
+            moveAction = SCNAction.moveBy(x: 0, y: 0, z: -1, duration: 0.2)
         } else if direction == .right {
             print("RIGHT")
-            rotateAction = SCNAction.rotateBy(x: 1.5708*2, y: 0, z: 0, duration: 0.4)
-            moveAction = SCNAction.moveBy(x: 1, y: 0, z: 0, duration: 0.4)
+            rotateAction = SCNAction.rotateBy(x: 0, y: 0, z: 1.5708*2, duration: 0.2)
+            moveAction = SCNAction.moveBy(x: 1, y: 0, z: 0, duration: 0.2)
         } else if direction == .left {
             print("LEFT")
-            rotateAction = SCNAction.rotateBy(x: -1.5708*2, y: 0, z: 0, duration: 0.4)
-            moveAction = SCNAction.moveBy(x: -1, y: 0, z: 0 , duration: 0.4)
+            rotateAction = SCNAction.rotateBy(x: 0, y: 0, z: -1.5708*2, duration: 0.2)
+            moveAction = SCNAction.moveBy(x: -1, y: 0, z: 0 , duration: 0.2)
         } else {
             return
         }
         
-        let moveUpAction = SCNAction.customAction(duration: 0.4) { (node, time) in
+        let moveUpAction = SCNAction.customAction(duration: 0.2) { (node, time) in
             //-16.79375(x-0.2)^2+0.67175
-            let position = (-16.79375*pow(time-0.2, 2)) + 0.67175
+            let position = (-67.175*pow(time-0.1, 2)) + 0.67175
             node.position.y = position
         }
         //moveUpAction, rotateAction
-        super.node.runAction((SCNAction.group([moveAction, moveUpAction, rotateAction]))) {
+        self.node.runAction((SCNAction.group([moveAction, moveUpAction, rotateAction]))) {
             //change reference point
             
-            //            super.node.rotation = SCNVector4(0, 0, 0, 1.5708*2)
-            //            super.node.position.y = 0
+            
             
             //move light
             
             //calculate emotions
             
-                vc.scene.calculateEmotions()
+            vc.scene.calculateEmotions()
             
             
         }
