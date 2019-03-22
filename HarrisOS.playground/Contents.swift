@@ -126,7 +126,7 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         
         //initally run
 //        calculateEmotions()
-        vc.makeTimer()
+//        vc.makeTimer()
     }
     
     @objc func calculateEmotions() {
@@ -407,8 +407,11 @@ class UserCharachter: BlockCharachter {
             
             
 //            vc.scene.calculateEmotions()
+//            DispatchQueue.main.async {
+//                vc.makeTimer()
+//            }
             
-            vc.makeTimer()
+            
         }
     }
 }
@@ -458,30 +461,41 @@ class SceneViewController: NSViewController {
         if event.keyCode == downArrow || event.keyCode == upArrow || event.keyCode
             == rightArrow || event.keyCode == leftArrow {
             
-            guard let timer = timer else { return }
-            if timer.isValid {
-                timer.invalidate()
-            }
+            
         }
     }
     
     override func keyUp(with event: NSEvent) {
-        let userCharachter = self.scene.charachters[0] as! UserCharachter
         if event.keyCode == downArrow {
-            userCharachter.move(in: .back)
+            scene.userCharachter.move(in: .back)
         } else if event.keyCode == upArrow {
-            userCharachter.move(in: .foward)
+            scene.userCharachter.move(in: .foward)
         } else if event.keyCode == rightArrow {
-            userCharachter.move(in: .right)
+            scene.userCharachter.move(in: .right)
         } else if event.keyCode == leftArrow {
-            userCharachter.move(in: .left)
+            scene.userCharachter.move(in: .left)
         } else {
             return
         }
+        
+        
+        //doesn't = nil and is running
+        // && (timer?.isValid)! == true
+//        DispatchQueue.global(qos: .background).async {
+            if self.timer != nil {
+                self.timer?.invalidate()
+                self.timer = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(self.testinr), userInfo: nil, repeats: false)
+                //is nil and is running
+            } else {
+                self.timer = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(self.testinr), userInfo: nil, repeats: false)
+            }
+//        }
     }
     
-    func makeTimer() {
-        timer = Timer.scheduledTimer(timeInterval: 5, target: self, selector: #selector(vc.scene.calculateEmotions), userInfo: nil, repeats: false)
+    
+    
+    @objc func testinr() {
+        scene.calculateEmotions()
     }
 }
 
