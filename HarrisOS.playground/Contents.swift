@@ -17,7 +17,7 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
     public var charachters: [BlockCharachter] = []
     
 //    let userCharachter = UserCharachter(position: SCNVector3(x: 1, y: 0, z: 1), happinessLevel: 0)
-    let userCharachter = UserCharachter(position: SCNVector3(x: 18, y: 0, z: 18), happinessLevel: 0)
+    let userCharachter = UserCharachter(position: SCNVector3(x: 8, y: 0, z: 8), happinessLevel: 0)
     
     override init() {
         super.init()
@@ -64,50 +64,50 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         charachters.append(userCharachter)
         
         
-        let charachterCount = 75
-        //        for x in 0...charachterCount {
-        //            let fieldSize = 16
-        //
-        //            var uniquePoint = CGPoint(x: -1, y: -1)
-        //            while previousLocations.contains(uniquePoint) || uniquePoint.x == -1 || (uniquePoint.x == 8 && uniquePoint.y == 8){
-        //                let randomX = Int.random(in: 1...fieldSize)
-        //                let randomZ = Int.random(in: 1...fieldSize)
-        //                uniquePoint = CGPoint(x: randomX, y: randomZ)
-        //            }
-        //
-        //            previousLocations.append(uniquePoint)
-        //
-        //            //make new charachter
-        //            let newCharachter = BlockCharachter(position: SCNVector3(uniquePoint.x, 0, uniquePoint.y))
-        //            charachters.append(newCharachter)
-        //            newCharachter.happinessLevel = Double.random(in: 0...1)
-        //            self.rootNode.addChildNode(newCharachter.node)
-        //            self.rootNode.addChildNode(newCharachter.lightNode)
-        //
-        //
-        //            let random1 = CGFloat.random(in: 0...255)
-        //            let random2 = CGFloat.random(in: 0...255)
-        //            let random3 = CGFloat.random(in: 0...255)
-        //            self.charachters[x].changeColorTo(NSColor(red: random1/255, green: random2/255, blue: random3/255, alpha: 1))
-        //        }
+        let charachterCount = 40
+        for x in 0...charachterCount {
+            let fieldSize = 16
+
+            var uniquePoint = CGPoint(x: -1, y: -1)
+            while previousLocations.contains(uniquePoint) || uniquePoint.x == -1 || (uniquePoint.x == 8 && uniquePoint.y == 8){
+                let randomX = Int.random(in: 1...fieldSize)
+                let randomZ = Int.random(in: 1...fieldSize)
+                uniquePoint = CGPoint(x: randomX, y: randomZ)
+            }
+
+            previousLocations.append(uniquePoint)
+
+            //make new charachter
+            let newCharachter = BlockCharachter(position: SCNVector3(uniquePoint.x, 0, uniquePoint.y), happinessLevel: Double.random(in: 0...1))
+            charachters.append(newCharachter)
+            newCharachter.happinessLevel = Double.random(in: 0...1)
+            self.rootNode.addChildNode(newCharachter.node)
+            self.rootNode.addChildNode(newCharachter.lightNode)
+
+
+            let random1 = CGFloat.random(in: 0...255)
+            let random2 = CGFloat.random(in: 0...255)
+            let random3 = CGFloat.random(in: 0...255)
+            self.charachters[x].changeColorTo(NSColor(red: random1/255, green: random2/255, blue: random3/255, alpha: 1))
+        }
         
         
         
         //make new charachter
-        let test1newCharachter = BlockCharachter(position: SCNVector3(0, 0, 0), happinessLevel: 1)
-        charachters.append(test1newCharachter)
-        self.rootNode.addChildNode(test1newCharachter.node)
-        self.rootNode.addChildNode(test1newCharachter.lightNode)
+//        let test1newCharachter = BlockCharachter(position: SCNVector3(0, 0, 0), happinessLevel: 1)
+//        charachters.append(test1newCharachter)
+//        self.rootNode.addChildNode(test1newCharachter.node)
+//        self.rootNode.addChildNode(test1newCharachter.lightNode)
         
 //        let test1pnewCharachter = BlockCharachter(position: SCNVector3(0, 0, 1), happinessLevel: 1)
 //        charachters.append(test1pnewCharachter)
 //        self.rootNode.addChildNode(test1pnewCharachter.node)
 //        self.rootNode.addChildNode(test1pnewCharachter.lightNode)
         
-        let test2newCharachter = BlockCharachter(position: SCNVector3(19, 0, 19), happinessLevel: 1)
-        charachters.append(test2newCharachter)
-        self.rootNode.addChildNode(test2newCharachter.node)
-        self.rootNode.addChildNode(test2newCharachter.lightNode)
+//        let test2newCharachter = BlockCharachter(position: SCNVector3(19, 0, 19), happinessLevel: 1)
+//        charachters.append(test2newCharachter)
+//        self.rootNode.addChildNode(test2newCharachter.node)
+//        self.rootNode.addChildNode(test2newCharachter.lightNode)
         
         
         
@@ -170,7 +170,7 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
             let charachter = charachters[i]
             
             //*0.135
-            let hue: CGFloat = CGFloat(charachter.happinessLevel) * 0.135
+            let hue: CGFloat = CGFloat(charachter.happinessLevel) * 0.145
             let newColor = NSColor(hue: hue, saturation: 1, brightness: 1, alpha: 1)
             DispatchQueue.main.async {
                 charachter.changeColorTo(newColor)
@@ -227,8 +227,12 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
 
 
                     if contributorCount != 0 {
+                        var refCharachterInfluence = 0.5
+                        if refCharachter.isUserCharachter == true {
+                            refCharachterInfluence = 0.9
+                        }
                         let influenceOfNeighbors = (happinessTotal / contributorCount) * 0.5
-                        let influenceOfSelf = refCharachter.happinessLevel * 0.5
+                        let influenceOfSelf = refCharachter.happinessLevel * refCharachterInfluence
                         charachtersUpdatedLevels[y][x] = (influenceOfNeighbors + influenceOfSelf)
                     }
                 }
@@ -315,6 +319,8 @@ class BlockCharachter {
     
     var happinessLevel = 0.0
     
+    var isUserCharachter = false
+    
     init(position: SCNVector3, happinessLevel: Double) {
         
         let geometry = SCNBox(width: 0.95, height: 0.95, length: 0.95, chamferRadius: 0.26)
@@ -378,6 +384,10 @@ class BlockCharachter {
 
 
 class UserCharachter: BlockCharachter {
+    override init(position: SCNVector3, happinessLevel: Double) {
+        super.init(position:osition, happinessLevel: happinessLevel)
+        isUserCharachter = true
+    }
     func move(in direction: Direction) {
         let rotateAction: SCNAction
         let moveAction: SCNAction
