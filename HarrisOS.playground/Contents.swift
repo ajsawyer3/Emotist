@@ -11,7 +11,7 @@ enum Direction {
 }
 
 class Scene: SCNScene, SCNSceneRendererDelegate {
-    var sceneView: SCNView = SCNView(frame: CGRect(x: 0, y: 0, width: 400, height: 800))
+    var sceneView: SCNView = SCNView(frame: CGRect(x: 0, y: 0, width: 650, height: 650))
     public var charachters: [BlockCharachter] = []
     
     let userCharachter = UserCharachter(position: SCNVector3(x: 8, y: 0, z: 8), happinessLevel: 0)
@@ -21,7 +21,7 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         
         sceneView.delegate = self
         sceneView.scene = self
-        sceneView.allowsCameraControl = true
+        sceneView.allowsCameraControl = false
         sceneView.showsStatistics = true
         
         //GEOMETRY
@@ -30,28 +30,19 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         let floorNode = SCNNode(geometry: floorGeometry)
         floorNode.position = SCNVector3(0, -0.51, 0)
         
-        //        floorNode.physicsBody = SCNPhysicsBody(type: .static, shape: SCNPhysicsShape(geometry: SCNBox(width:1000, height:0.0001, length:1000, chamferRadius: 0), options: nil))
-        
-        
         //floor material
+        let floorMaterial = floorGeometry.firstMaterial
+        floorMaterial?.lightingModel = .physicallyBased
         
-        let material = floorGeometry.firstMaterial
-        material?.lightingModel = .physicallyBased
-        
-        //        floorGeometry.reflectivity = 0.01
         floorGeometry.reflectivity = 0
-        material?.diffuse.contents = NSColor(white: 0.02, alpha: 1)
-        material?.metalness.contents = NSColor(white: 0.8, alpha: 1)
-        material?.roughness.contents = NSImage(imageLiteralResourceName: "grid.png")
-        material?.roughness.wrapT = .mirror
-        material?.roughness.wrapS = .mirror
-        material?.roughness.contentsTransform = SCNMatrix4MakeScale(100, 100, 1)
+        floorMaterial?.diffuse.contents = NSColor(white: 0.02, alpha: 1)
+        floorMaterial?.metalness.contents = NSColor(white: 0.8, alpha: 1)
+        floorMaterial?.roughness.contents = NSImage(imageLiteralResourceName: "grid.png")
+        floorMaterial?.roughness.wrapT = .mirror
+        floorMaterial?.roughness.wrapS = .mirror
+        floorMaterial?.roughness.contentsTransform = SCNMatrix4MakeScale(100, 100, 1)
         
         self.rootNode.addChildNode(floorNode)
-        
-        //create & add charachters to scene (in unique location)
-        //        let charachterCount = 99
-        
         
         
         //make user charachter
@@ -61,9 +52,9 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         charachters.append(userCharachter)
         
         
-        let charachterCount = 40
-        for x in 0...charachterCount {
-            let fieldSize = 16
+        //create all other charachters in random locations
+        for x in 0...40 {
+            let fieldSize = 19
 
             var uniquePoint = CGPoint(x: -1, y: -1)
             while previousLocations.contains(uniquePoint) || uniquePoint.x == -1 || (uniquePoint.x == 8 && uniquePoint.y == 8){
@@ -77,34 +68,9 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
             //make new charachter
             let newCharachter = BlockCharachter(position: SCNVector3(uniquePoint.x, 0, uniquePoint.y), happinessLevel: Double.random(in: 0...1))
             charachters.append(newCharachter)
-            newCharachter.happinessLevel = Double.random(in: 0...1)
             self.rootNode.addChildNode(newCharachter.node)
             self.rootNode.addChildNode(newCharachter.lightNode)
-
-
-            let random1 = CGFloat.random(in: 0...255)
-            let random2 = CGFloat.random(in: 0...255)
-            let random3 = CGFloat.random(in: 0...255)
-            self.charachters[x].changeColorTo(NSColor(red: random1/255, green: random2/255, blue: random3/255, alpha: 1))
         }
-        
-        
-        
-        //make new charachter
-//        let test1newCharachter = BlockCharachter(position: SCNVector3(0, 0, 0), happinessLevel: 1)
-//        charachters.append(test1newCharachter)
-//        self.rootNode.addChildNode(test1newCharachter.node)
-//        self.rootNode.addChildNode(test1newCharachter.lightNode)
-        
-//        let test1pnewCharachter = BlockCharachter(position: SCNVector3(0, 0, 1), happinessLevel: 1)
-//        charachters.append(test1pnewCharachter)
-//        self.rootNode.addChildNode(test1pnewCharachter.node)
-//        self.rootNode.addChildNode(test1pnewCharachter.lightNode)
-        
-//        let test2newCharachter = BlockCharachter(position: SCNVector3(19, 0, 19), happinessLevel: 1)
-//        charachters.append(test2newCharachter)
-//        self.rootNode.addChildNode(test2newCharachter.node)
-//        self.rootNode.addChildNode(test2newCharachter.lightNode)
         
         
         
@@ -115,23 +81,39 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         rootNode.addChildNode(cameraNode)
         
         //lighting
-        let environment = NSImage(named: "hdri.jpg")
-        self.lightingEnvironment.contents = environment
-        self.lightingEnvironment.intensity = 2.0
+//        let environment = NSImage(named: "hdri.jpg")
+//        self.lightingEnvironment.contents = environment
+//        self.lightingEnvironment.intensity = 2.5
+        
+        let ambientLightNodeYellow = SCNNode()
+        ambientLightNodeYellow.position = SCNVector3(x: 10, y: 10, z: -5)
+        let ambientLightYellow = SCNLight()
+        ambientLightYellow.color = NSColor(hue: 0.135, saturation: 0.2, brightness: 1, alpha: 1)
+        ambientLightYellow.intensity = 500
+        ambientLightNodeYellow.light = ambientLightYellow
+        ambientLightYellow.type = .omni
+        
+        let ambientLightNodeRed = SCNNode()
+        ambientLightNodeRed.position = SCNVector3(x: 25, y: 10, z: 10)
+        let ambientLightRed = SCNLight()
+        ambientLightRed.color = NSColor(hue: 0, saturation: 0.2, brightness: 1, alpha: 1)
+        ambientLightRed.intensity = 500
+        ambientLightNodeRed.light = ambientLightRed
+        ambientLightRed.type = .omni
+        
+        rootNode.addChildNode(ambientLightNodeYellow)
+        rootNode.addChildNode(ambientLightNodeRed)
         
         self.background.contents = NSColor.black
         
         
         
-        
         //initally run
-//        calculateEmotions()
-//        vc.makeTimer()
+        calculateEmotions()
     }
     
     @objc func calculateEmotions() {
-        print("CALCULATING")
-        DispatchQueue.global(qos: .background).async {
+        DispatchQueue.global(qos: .utility).async {
             let originalMap = self.makeArrayMap()
             let newMap = self.calculateNewHappiness(map: originalMap)
             self.assignNewMap(newMap: newMap)
@@ -216,9 +198,9 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
             }
         }
         
-        for row in charachtersUpdatedLevels {
-            print(row)
-        }
+//        for row in charachtersUpdatedLevels {
+//            print(row)
+//        }
         
         return charachtersUpdatedLevels
     }
@@ -243,29 +225,26 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         }
     }
     
-    
-    
-    
     func createCameraNode(following target: SCNNode) -> SCNNode {
         let camera = SCNCamera()
-        
-        camera.focalLength = 24
+
+        camera.focalLength = 30
         camera.focusDistance = 8.124
-        
+
         camera.zFar = 1000
         camera.zNear = 0.1
-        
-        camera.fStop = 0.05
+
+        camera.fStop = 0.008
         camera.apertureBladeCount = 5
-        //        camera.wantsDepthOfField = true
-        
-        camera.bloomBlurRadius = 8
-        camera.bloomIntensity = 0.2
+        camera.wantsDepthOfField = true
+
+        camera.bloomBlurRadius = 9
+        camera.bloomIntensity = 0.3
         camera.bloomThreshold = 0.3
-        
-        camera.vignettingIntensity = 0.3
+
+        camera.vignettingIntensity = 0.4
         camera.vignettingPower = 1
-        
+
         camera.wantsHDR = true
         
         let cameraNode = SCNNode()
@@ -304,18 +283,11 @@ class BlockCharachter {
     
     init(position: SCNVector3, happinessLevel: Double) {
         
-        let geometry = SCNBox(width: 0.95, height: 0.95, length: 0.95, chamferRadius: 0.26)
+        let geometry = SCNBox(width: 0.95, height: 0.95, length: 0.95, chamferRadius: 0.25)
         
         node = SCNNode(geometry: geometry)
-//        node.pivot = SCNMatrix4MakeTranslation(0, 0, 0)
         node.position = position
         self.happinessLevel = happinessLevel
-        
-        //physics
-        //        node.physicsBody = SCNPhysicsBody(type: .dynamic, shape: SCNPhysicsShape(geometry: geometry, options: nil))
-        //        node.physicsBody?.allowsResting = true
-        //                node.physicsBody?.restitution = 0
-        
         
         //cube material
         if let firstMaterial = geometry.firstMaterial {
@@ -324,17 +296,21 @@ class BlockCharachter {
             firstMaterial.diffuse.contents = NSColor(hue: 0, saturation: 0, brightness: 0, alpha: 1)
             
             firstMaterial.metalness.contents = NSColor(white: 0.8, alpha: 1)
-            firstMaterial.roughness.contents = NSColor(white: 0.3, alpha: 1)
-            //            firstMaterial.roughness.contents = NSImage(imageLiteralResourceName: "normal.png")
+//            firstMaterial.roughness.contents = NSColor(white: 0.3, alpha: 1)
+            firstMaterial.roughness.contents = NSImage(imageLiteralResourceName: "normal.png")
+            firstMaterial.transparency = 0.95
+            firstMaterial.fresnelExponent = 3.2
+//            firstMaterial.isDoubleSided = true
+            firstMaterial.transparencyMode = .dualLayer
         }
         
         //inside light
         let light = SCNLight()
         light.intensity = 10
         light.attenuationEndDistance = 5
-        
+
         light.type = SCNLight.LightType.omni
-        
+
         lightNode.light = light
         lightNode.position = node.position
         lightNode.position.y += 0.1
@@ -373,21 +349,17 @@ class UserCharachter: BlockCharachter {
         let rotateAction: SCNAction
         let moveAction: SCNAction
         if direction == .back {
-            print("BACKWARDS")
             rotateAction = SCNAction.rotateBy(x: 1.5708*2, y: 0, z: 0, duration: 0.2)
-            moveAction = SCNAction.moveBy(x: 0, y: 0, z: 1, duration: 0.2)
+            moveAction = SCNAction.moveBy(x: 0, y: 0, z: 1, duration: 0.3)
         } else if direction == .foward {
-            print("FOWARD")
             rotateAction = SCNAction.rotateBy(x: -1.5708*2, y: 0, z: 0, duration: 0.2)
-            moveAction = SCNAction.moveBy(x: 0, y: 0, z: -1, duration: 0.2)
+            moveAction = SCNAction.moveBy(x: 0, y: 0, z: -1, duration: 0.3)
         } else if direction == .right {
-            print("RIGHT")
             rotateAction = SCNAction.rotateBy(x: 0, y: 0, z: 1.5708*2, duration: 0.2)
-            moveAction = SCNAction.moveBy(x: 1, y: 0, z: 0, duration: 0.2)
+            moveAction = SCNAction.moveBy(x: 1, y: 0, z: 0, duration: 0.3)
         } else if direction == .left {
-            print("LEFT")
             rotateAction = SCNAction.rotateBy(x: 0, y: 0, z: -1.5708*2, duration: 0.2)
-            moveAction = SCNAction.moveBy(x: -1, y: 0, z: 0 , duration: 0.2)
+            moveAction = SCNAction.moveBy(x: -1, y: 0, z: 0 , duration: 0.3)
         } else {
             return
         }
@@ -398,21 +370,7 @@ class UserCharachter: BlockCharachter {
             node.position.y = position
         }
         //moveUpAction, rotateAction
-        self.node.runAction((SCNAction.group([moveAction, moveUpAction]))) {
-            //change reference point
-            
-            //move light
-            
-            //calculate emotions
-            
-            
-//            vc.scene.calculateEmotions()
-//            DispatchQueue.main.async {
-//                vc.makeTimer()
-//            }
-            
-            
-        }
+        self.node.runAction((SCNAction.group([moveAction])))
     }
 }
 
@@ -443,7 +401,7 @@ class SceneViewController: NSViewController {
     let upArrow: UInt16 = 0x7E
     
     override func loadView() {
-        view = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 800))
+        view = NSView(frame: NSRect(x: 0, y: 0, width: 650, height: 650))
         
         self.view.addSubview(scene.sceneView)
         
@@ -457,15 +415,14 @@ class SceneViewController: NSViewController {
     }
     
     override func keyDown(with event: NSEvent) {
-        print("CANCEL TIMER")
-        if event.keyCode == downArrow || event.keyCode == upArrow || event.keyCode
-            == rightArrow || event.keyCode == leftArrow {
-            
-            
-        }
+        handleKeyPresses(event)
     }
     
     override func keyUp(with event: NSEvent) {
+//        handleKeyPresses(event)
+    }
+    
+    func handleKeyPresses(_ event: NSEvent) {
         if event.keyCode == downArrow {
             scene.userCharachter.move(in: .back)
         } else if event.keyCode == upArrow {
@@ -478,24 +435,13 @@ class SceneViewController: NSViewController {
             return
         }
         
-        
-        //doesn't = nil and is running
-        // && (timer?.isValid)! == true
-//        DispatchQueue.global(qos: .background).async {
-            if self.timer != nil {
-                self.timer?.invalidate()
-                self.timer = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(self.testinr), userInfo: nil, repeats: false)
-                //is nil and is running
-            } else {
-                self.timer = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(self.testinr), userInfo: nil, repeats: false)
-            }
-//        }
-    }
-    
-    
-    
-    @objc func testinr() {
-        scene.calculateEmotions()
+        if self.timer != nil {
+            self.timer?.invalidate()
+            self.timer = Timer.scheduledTimer(timeInterval: 1, target: scene.self, selector: #selector(scene.calculateEmotions), userInfo: nil, repeats: false)
+            //is nil and is running
+        } else {
+            self.timer = Timer.scheduledTimer(timeInterval: 1, target: scene.self, selector: #selector(scene.calculateEmotions), userInfo: nil, repeats: false)
+        }
     }
 }
 
