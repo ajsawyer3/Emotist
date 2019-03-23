@@ -55,31 +55,31 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         
         
         //create all other charachters in random locations
-//        for x in 0...40 {
-//            let fieldSize = 19
-//
-//            var uniquePoint = CGPoint(x: -1, y: -1)
-//            while previousLocations.contains(uniquePoint) || uniquePoint.x == -1 || (uniquePoint.x == 8 && uniquePoint.y == 8){
-//                let randomX = Int.random(in: 1...fieldSize)
-//                let randomZ = Int.random(in: 1...fieldSize)
-//                uniquePoint = CGPoint(x: randomX, y: randomZ)
-//            }
-//
-//            previousLocations.append(uniquePoint)
-//
-//            //make new charachter
-//            let newCharachter = BlockCharachter(position: SCNVector3(uniquePoint.x, 0, uniquePoint.y), happinessLevel: Double.random(in: 0...1))
-//            charachters.append(newCharachter)
-//            self.rootNode.addChildNode(newCharachter.node)
-//            self.rootNode.addChildNode(newCharachter.lightNode)
-//        }
+        for x in 0...40 {
+            let fieldSize = 19
+
+            var uniquePoint = CGPoint(x: -1, y: -1)
+            while previousLocations.contains(uniquePoint) || uniquePoint.x == -1 || (uniquePoint.x == 8 && uniquePoint.y == 8){
+                let randomX = Int.random(in: 1...fieldSize)
+                let randomZ = Int.random(in: 1...fieldSize)
+                uniquePoint = CGPoint(x: randomX, y: randomZ)
+            }
+
+            previousLocations.append(uniquePoint)
+
+            //make new charachter
+            let newCharachter = BlockCharachter(position: SCNVector3(uniquePoint.x, 0, uniquePoint.y), happinessLevel: Double.random(in: 0...1))
+            charachters.append(newCharachter)
+            self.rootNode.addChildNode(newCharachter.node)
+            self.rootNode.addChildNode(newCharachter.lightNode)
+        }
         
             //TEST
-        let newCharachter = BlockCharachter(position: SCNVector3(0, 0, 0), happinessLevel: Double.random(in: 0...1))
-        charachters.append(newCharachter)
-        self.rootNode.addChildNode(newCharachter.node)
-        self.rootNode.addChildNode(newCharachter.lightNode)
-        
+//        let newCharachter = BlockCharachter(position: SCNVector3(0, 0, 0), happinessLevel: Double.random(in: 0...1))
+//        charachters.append(newCharachter)
+//        self.rootNode.addChildNode(newCharachter.node)
+//        self.rootNode.addChildNode(newCharachter.lightNode)
+//
         
         
         
@@ -148,11 +148,10 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
     }
     
     func calculateNewHappiness() {
-        var updatedCharachterMap: [[BlockCharachter?]] = charachterMap
+        var updatedCharachterMap = charachterMap
         
         for y in 0...19 {
             for x in 0...19 {
-                
                 //if reference charachter is not nil
                 if let refCharachter = charachterMap[y][x] {
                     var happinessTotal = 0.0
@@ -201,31 +200,21 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         }
         
         charachterMap = updatedCharachterMap
-        
-//        for row in updatedCharachterMap {
-//            print(row)
-//        }
+        assignNewMap()
     }
     
-    func assignNewMap(newMap: [[Double?]]) {
-        let flatMap = newMap.flatMap { $0 }.compactMap { $0 }
-        
-        for i in 0...(charachters.count-1) {
-            let newValue = flatMap[i]
-            let charachter = charachters[i]
-            
-            //set newly calculated value to happinessLevel
-            charachter.happinessLevel = newValue
-            
-            //*0.135
-            let hue: CGFloat = CGFloat(charachter.happinessLevel) * 0.135
-            let newColor = NSColor(hue: hue, saturation: 1, brightness: CGFloat(pow(charachter.happinessLevel, 3)), alpha: 1)
-            
-//            let newColor = NSColor(calibratedRed: CGFloat(1-charachter.happinessLevel), green: CGFloat(charachter.happinessLevel), blue: CGFloat(charachter.happinessLevel), alpha: 1)
-            DispatchQueue.main.async {
-                charachter.changeColorTo(newColor)
+    func assignNewMap() {
+        for y in 0...19 {
+            for x in 0...19 {
+                if let charachter = charachterMap[y][x] {
+                    let hue: CGFloat = CGFloat(charachter.happinessLevel) * 0.5
+                    let newColor = NSColor(hue: hue, saturation: 1, brightness: 1, alpha: 1)
+                    
+                    DispatchQueue.main.async {
+                        charachter.changeColorTo(newColor)
+                    }
+                }
             }
-            
         }
     }
     
@@ -240,7 +229,7 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
 
         camera.fStop = 0.01
         camera.apertureBladeCount = 5
-        camera.wantsDepthOfField = true
+        camera.wantsDepthOfField = false
 
         camera.bloomBlurRadius = 4
         camera.bloomIntensity = 0.3
@@ -396,12 +385,7 @@ class UserCharachter: BlockCharachter {
         }
         //moveUpAction, rotateAction
         self.node.runAction((SCNAction.group([moveAction]))) {
-            for row in vc.scene.charachterMap {
-                print(row)
-            }
-            print(" ")
-            print(" ")
-            print(" ")
+            vc.scene.calculateEmotions()
         }
     }
 }
@@ -425,7 +409,7 @@ class UserCharachter: BlockCharachter {
 class SceneViewController: NSViewController {
     public let scene = Scene()
     
-    var timer: Timer?
+//    var timer: Timer?
     
     let leftArrow: UInt16 = 0x7B
     let rightArrow: UInt16 = 0x7C
@@ -467,13 +451,13 @@ class SceneViewController: NSViewController {
             return
         }
         
-        if self.timer != nil {
-            self.timer?.invalidate()
-            self.timer = Timer.scheduledTimer(timeInterval: 1, target: scene.self, selector: #selector(scene.calculateEmotions), userInfo: nil, repeats: false)
-            //is nil and is running
-        } else {
-            self.timer = Timer.scheduledTimer(timeInterval: 1, target: scene.self, selector: #selector(scene.calculateEmotions), userInfo: nil, repeats: false)
-        }
+//        if self.timer != nil {
+//            self.timer?.invalidate()
+//            self.timer = Timer.scheduledTimer(timeInterval: 1, target: scene.self, selector: #selector(scene.calculateEmotions), userInfo: nil, repeats: false)
+//            //is nil and is running
+//        } else {
+//            self.timer = Timer.scheduledTimer(timeInterval: 1, target: scene.self, selector: #selector(scene.calculateEmotions), userInfo: nil, repeats: false)
+//        }
     }
 }
 
