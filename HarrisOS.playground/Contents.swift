@@ -16,6 +16,8 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
     
     let userCharachter = UserCharachter(position: SCNVector3(x: 8, y: 0, z: 8), happinessLevel: 0)
     
+    var charachterMap: [[BlockCharachter?]] = []
+    
     override init() {
         super.init()
         
@@ -109,100 +111,94 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         
         
         //initally run
-        calculateEmotions()
+        //create initial map
+        charachterMap = makeInitialMap()
+        //calculate emotions
     }
     
     @objc func calculateEmotions() {
-        DispatchQueue.global(qos: .utility).async {
-            let originalMap = self.makeArrayMap()
-            let newMap = self.calculateNewHappiness(map: originalMap)
-            self.assignNewMap(newMap: newMap)
+        DispatchQueue.global(qos: .background).async {
+            self.calculateNewHappiness()
         }
     }
     
-    func makeArrayMap() -> [[BlockCharachter?]] {
-        var charachtersOnGrid: [[BlockCharachter?]] = []
+    func makeInitialMap() -> [[BlockCharachter?]] {
+        //make nil filled array
+        var map: [[BlockCharachter?]] = []
         for x in 0...19 {
-            charachtersOnGrid.append([])
+            map.append([])
             for _ in 0...19 {
-                charachtersOnGrid[x].append(nil)
+                map[x].append(nil)
             }
         }
         
-        
+        //fill array with charachters
         for charachter in charachters {
-            charachtersOnGrid[Int(round(charachter.node.position.z))][Int(round(charachter.node.position.x))] = charachter
+            map[Int(round(charachter.node.position.z))][Int(round(charachter.node.position.x))] = charachter
         }
         
         
-        return charachtersOnGrid
+        return map
     }
     
-    func calculateNewHappiness(map: [[BlockCharachter?]]) -> [[Double?]] {
-        var charachtersUpdatedLevels: [[Double?]] = []
+    func calculateNewHappiness() {
+        var updatedCharachterMap: [[BlockCharachter?]] = charachterMap
+        
         for y in 0...19 {
-            charachtersUpdatedLevels.append([])
             for x in 0...19 {
-                //make charachtersUpdatedLevels = to currentlevels
-                if let original = map[y][x] {
-                    charachtersUpdatedLevels[y].append(original.happinessLevel)
-                } else {
-                    charachtersUpdatedLevels[y].append(nil)
-                }
                 
-                //if refCharachter is not nil
-                if let refCharachter = map[y][x] {
+                //if reference charachter is not nil
+                if let refCharachter = charachterMap[y][x] {
                     var happinessTotal = 0.0
                     var contributorCount = 0.0
 
-//                    x, y+1
-//                    x, y-1
-//                    x+1, y
-//                    x-1, y
-
                     // top item
-                    if y - 1 >= 0, let topBlock = map[y-1][x] {
+                    if y - 1 >= 0, let topBlock = charachterMap[y-1][x] {
                         happinessTotal += topBlock.happinessLevel
                         contributorCount += 1
                     }
 
                     // left item
-                    if x - 1 >= 0, let leftBlock = map[y][x - 1] {
+                    if x - 1 >= 0, let leftBlock = charachterMap[y][x - 1] {
                         happinessTotal += leftBlock.happinessLevel
                         contributorCount += 1
                     }
 
                     // right item
-                    if x + 1 <= 19, let rightBlock = map[y][x + 1] {
+                    if x + 1 <= 19, let rightBlock = charachterMap[y][x + 1] {
                         happinessTotal += rightBlock.happinessLevel
                         contributorCount += 1
                     }
 
                     // bottom item
-                    if y + 1 <= 19, let bottomItem = map[y + 1][x] {
+                    if y + 1 <= 19, let bottomItem = charachterMap[y + 1][x] {
                         happinessTotal += bottomItem.happinessLevel
                         contributorCount += 1
                     }
 
 
                     if contributorCount != 0 {
-                        var refCharachterInfluence = 0.5
-                        if refCharachter.isUserCharachter == true {
-                            refCharachterInfluence = 0.9
+                        var referenceCharachterInfluence = 0.5, secondaryCharachterInfluence = 0.5
+                        
+                        if refCharachter is UserCharachter {
+                            referenceCharachterInfluence = 0.8
+                            secondaryCharachterInfluence = 0.2
                         }
-                        let influenceOfNeighbors = (happinessTotal / contributorCount) * 0.5
-                        let influenceOfSelf = refCharachter.happinessLevel * refCharachterInfluence
-                        charachtersUpdatedLevels[y][x] = (influenceOfNeighbors + influenceOfSelf)
+                        
+                        let referenceCharachterPortion = refCharachter.happinessLevel * referenceCharachterInfluence
+                        let secondaryCharachtersPortion = (happinessTotal / contributorCount) * secondaryCharachterInfluence
+                        
+                        updatedCharachterMap[y][x]?.happinessLevel = (referenceCharachterPortion + secondaryCharachtersPortion)
                     }
                 }
             }
         }
         
-//        for row in charachtersUpdatedLevels {
+        charachterMap = updatedCharachterMap
+        
+//        for row in updatedCharachterMap {
 //            print(row)
 //        }
-        
-        return charachtersUpdatedLevels
     }
     
     func assignNewMap(newMap: [[Double?]]) {
