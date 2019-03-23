@@ -12,11 +12,11 @@ enum Direction {
 
 class Scene: SCNScene, SCNSceneRendererDelegate {
     var sceneView: SCNView = SCNView(frame: CGRect(x: 0, y: 0, width: 650, height: 650))
+    
     public var charachters: [BlockCharachter] = []
+    public var charachterMap: [[BlockCharachter?]] = []
     
     let userCharachter = UserCharachter(position: SCNVector3(x: 8, y: 0, z: 8), happinessLevel: 0)
-    
-    var charachterMap: [[BlockCharachter?]] = []
     
     override init() {
         super.init()
@@ -55,24 +55,30 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         
         
         //create all other charachters in random locations
-        for x in 0...40 {
-            let fieldSize = 19
-
-            var uniquePoint = CGPoint(x: -1, y: -1)
-            while previousLocations.contains(uniquePoint) || uniquePoint.x == -1 || (uniquePoint.x == 8 && uniquePoint.y == 8){
-                let randomX = Int.random(in: 1...fieldSize)
-                let randomZ = Int.random(in: 1...fieldSize)
-                uniquePoint = CGPoint(x: randomX, y: randomZ)
-            }
-
-            previousLocations.append(uniquePoint)
-
-            //make new charachter
-            let newCharachter = BlockCharachter(position: SCNVector3(uniquePoint.x, 0, uniquePoint.y), happinessLevel: Double.random(in: 0...1))
-            charachters.append(newCharachter)
-            self.rootNode.addChildNode(newCharachter.node)
-            self.rootNode.addChildNode(newCharachter.lightNode)
-        }
+//        for x in 0...40 {
+//            let fieldSize = 19
+//
+//            var uniquePoint = CGPoint(x: -1, y: -1)
+//            while previousLocations.contains(uniquePoint) || uniquePoint.x == -1 || (uniquePoint.x == 8 && uniquePoint.y == 8){
+//                let randomX = Int.random(in: 1...fieldSize)
+//                let randomZ = Int.random(in: 1...fieldSize)
+//                uniquePoint = CGPoint(x: randomX, y: randomZ)
+//            }
+//
+//            previousLocations.append(uniquePoint)
+//
+//            //make new charachter
+//            let newCharachter = BlockCharachter(position: SCNVector3(uniquePoint.x, 0, uniquePoint.y), happinessLevel: Double.random(in: 0...1))
+//            charachters.append(newCharachter)
+//            self.rootNode.addChildNode(newCharachter.node)
+//            self.rootNode.addChildNode(newCharachter.lightNode)
+//        }
+        
+            //TEST
+        let newCharachter = BlockCharachter(position: SCNVector3(0, 0, 0), happinessLevel: Double.random(in: 0...1))
+        charachters.append(newCharachter)
+        self.rootNode.addChildNode(newCharachter.node)
+        self.rootNode.addChildNode(newCharachter.lightNode)
         
         
         
@@ -344,23 +350,44 @@ class UserCharachter: BlockCharachter {
     }
     
     func move(in direction: Direction) {
+        for row in vc.scene.charachterMap {
+            print(row)
+        }
+        print(" ")
+        print(" ")
+        print(" ")
+        
         let rotateAction: SCNAction
         let moveAction: SCNAction
+        
+//        var map = vc.scene.charachterMap
+        
+        let currentZ = Int(round(node.position.z))
+        let currentX = Int(round(node.position.x))
+        
+//        let userCharachterElement = vc.scene.charachterMap[currentZ][currentX]
+        
         if direction == .back {
+            vc.scene.charachterMap[currentZ + 1][currentX] = self
             rotateAction = SCNAction.rotateBy(x: 1.5708*2, y: 0, z: 0, duration: 0.2)
             moveAction = SCNAction.moveBy(x: 0, y: 0, z: 1, duration: 0.3)
         } else if direction == .foward {
+            vc.scene.charachterMap[currentZ - 1][currentX] = self
             rotateAction = SCNAction.rotateBy(x: -1.5708*2, y: 0, z: 0, duration: 0.2)
             moveAction = SCNAction.moveBy(x: 0, y: 0, z: -1, duration: 0.3)
         } else if direction == .right {
+            vc.scene.charachterMap[currentZ][currentX + 1] = self
             rotateAction = SCNAction.rotateBy(x: 0, y: 0, z: 1.5708*2, duration: 0.2)
             moveAction = SCNAction.moveBy(x: 1, y: 0, z: 0, duration: 0.3)
         } else if direction == .left {
+            vc.scene.charachterMap[currentZ][currentX - 1] = self
             rotateAction = SCNAction.rotateBy(x: 0, y: 0, z: -1.5708*2, duration: 0.2)
             moveAction = SCNAction.moveBy(x: -1, y: 0, z: 0 , duration: 0.3)
         } else {
             return
         }
+        
+        vc.scene.charachterMap[currentZ][currentX] = nil
         
         let moveUpAction = SCNAction.customAction(duration: 0.2) { (node, time) in
             //-16.79375(x-0.2)^2+0.67175
@@ -368,7 +395,14 @@ class UserCharachter: BlockCharachter {
             node.position.y = position
         }
         //moveUpAction, rotateAction
-        self.node.runAction((SCNAction.group([moveAction])))
+        self.node.runAction((SCNAction.group([moveAction]))) {
+            for row in vc.scene.charachterMap {
+                print(row)
+            }
+            print(" ")
+            print(" ")
+            print(" ")
+        }
     }
 }
 
