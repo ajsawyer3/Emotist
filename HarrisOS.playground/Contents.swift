@@ -216,8 +216,10 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
             charachter.happinessLevel = newValue
             
             //*0.135
-            let hue: CGFloat = CGFloat(charachter.happinessLevel) * 0.145
-            let newColor = NSColor(hue: hue, saturation: 1, brightness: 1, alpha: 1)
+            let hue: CGFloat = CGFloat(charachter.happinessLevel) * 0.135
+            let newColor = NSColor(hue: hue, saturation: 1, brightness: CGFloat(pow(charachter.happinessLevel, 3)), alpha: 1)
+            
+//            let newColor = NSColor(calibratedRed: CGFloat(1-charachter.happinessLevel), green: CGFloat(charachter.happinessLevel), blue: CGFloat(charachter.happinessLevel), alpha: 1)
             DispatchQueue.main.async {
                 charachter.changeColorTo(newColor)
             }
@@ -234,11 +236,11 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         camera.zFar = 1000
         camera.zNear = 0.1
 
-        camera.fStop = 0.008
+        camera.fStop = 0.01
         camera.apertureBladeCount = 5
         camera.wantsDepthOfField = true
 
-        camera.bloomBlurRadius = 9
+        camera.bloomBlurRadius = 4
         camera.bloomIntensity = 0.3
         camera.bloomThreshold = 0.3
 
@@ -298,7 +300,7 @@ class BlockCharachter {
             firstMaterial.metalness.contents = NSColor(white: 0.8, alpha: 1)
 //            firstMaterial.roughness.contents = NSColor(white: 0.3, alpha: 1)
             firstMaterial.roughness.contents = NSImage(imageLiteralResourceName: "normal.png")
-            firstMaterial.transparency = 0.95
+            firstMaterial.transparency = 0.98
             firstMaterial.fresnelExponent = 3.2
 //            firstMaterial.isDoubleSided = true
             firstMaterial.transparencyMode = .dualLayer
