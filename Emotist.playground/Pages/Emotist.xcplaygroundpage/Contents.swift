@@ -13,10 +13,10 @@ enum Direction {
 class Scene: SCNScene, SCNSceneRendererDelegate {
     var sceneView: SCNView = SCNView(frame: CGRect(x: 0, y: 0, width: 650, height: 650))
     
+    static public let fieldSize = 16
+    
     public var charachters: [BlockCharachter] = []
     public var charachterMap: [[BlockCharachter?]] = []
-    
-    static public let fieldSize = 16
     
     let userCharachter = UserCharachter(position: SCNVector3(x: 8, y: 0, z: 8), happinessLevel: 0)
     
@@ -28,13 +28,40 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         sceneView.allowsCameraControl = false
         sceneView.showsStatistics = true
         
+        //CAMERA & LIGHTING
+        let cameraNode = createCameraNode(following: userCharachter.node)
+        cameraNode.position = userCharachter.node.position
+        rootNode.addChildNode(cameraNode)
+        
+        let ambientLightNodeYellow = SCNNode()
+        ambientLightNodeYellow.position = SCNVector3(x: 10, y: 10, z: -5)
+        let ambientLightYellow = SCNLight()
+        ambientLightYellow.color = NSColor(hue: 0.135, saturation: 0.2, brightness: 1, alpha: 1)
+        ambientLightYellow.intensity = 500
+        ambientLightNodeYellow.light = ambientLightYellow
+        ambientLightYellow.type = .omni
+        ambientLightYellow.attenuationEndDistance = 10
+        
+        let ambientLightNodeRed = SCNNode()
+        ambientLightNodeRed.position = SCNVector3(x: 25, y: 10, z: 10)
+        let ambientLightRed = SCNLight()
+        ambientLightRed.color = NSColor(hue: 0, saturation: 0.2, brightness: 1, alpha: 1)
+        ambientLightRed.intensity = 500
+        ambientLightNodeRed.light = ambientLightRed
+        ambientLightRed.type = .omni
+        ambientLightRed.attenuationEndDistance = 10
+        
+        rootNode.addChildNode(ambientLightNodeYellow)
+        rootNode.addChildNode(ambientLightNodeRed)
+        
+        self.background.contents = NSColor.black
+        
         //GEOMETRY
-        //floor
+        //Floor
         let floorGeometry = SCNFloor()
         let floorNode = SCNNode(geometry: floorGeometry)
         floorNode.position = SCNVector3(0, -0.51, 0)
         
-        //floor material
         let floorMaterial = floorGeometry.firstMaterial
         floorMaterial?.lightingModel = .physicallyBased
         
@@ -49,20 +76,20 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         self.rootNode.addChildNode(floorNode)
         
         
-        //make user charachter
+        //User Charachter
         var previousLocations: [CGPoint] = [CGPoint(x: 9, y: 9)]
         self.rootNode.addChildNode(userCharachter.node)
         self.rootNode.addChildNode(userCharachter.lightNode)
         charachters.append(userCharachter)
         
         
-        //create all other charachters in random locations
-        for x in 0...40 {
+        //Other Charachters
+        for x in 0...30 {
             
             var uniquePoint = CGPoint(x: -1, y: -1)
             while previousLocations.contains(uniquePoint) || uniquePoint.x == -1 || (uniquePoint.x == 8 && uniquePoint.y == 8){
-                let randomX = Int.random(in: 0..<16)
-                let randomZ = Int.random(in: 0..<16)
+                let randomX = Int.random(in: 0..<Scene.fieldSize)
+                let randomZ = Int.random(in: 0..<Scene.fieldSize)
                 uniquePoint = CGPoint(x: randomX, y: randomZ)
             }
             
@@ -75,67 +102,23 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
             self.rootNode.addChildNode(newCharachter.lightNode)
         }
         
-        //TEST
-        //        let newCharachter = BlockCharachter(position: SCNVector3(0, 0, 0), happinessLevel: Double.random(in: 0...1))
-        //        charachters.append(newCharachter)
-        //        self.rootNode.addChildNode(newCharachter.node)
-        //        self.rootNode.addChildNode(newCharachter.lightNode)
-        //
-        
-        
-        
-        //CAMERA & LIGHTING
-        let cameraNode = createCameraNode(following: userCharachter.node)
-        cameraNode.position = userCharachter.node.position
-        rootNode.addChildNode(cameraNode)
-        
-        //lighting
-        //        let environment = NSImage(named: "hdri.jpg")
-        //        self.lightingEnvironment.contents = environment
-        //        self.lightingEnvironment.intensity = 2.5
-        
-        let ambientLightNodeYellow = SCNNode()
-        ambientLightNodeYellow.position = SCNVector3(x: 10, y: 10, z: -5)
-        let ambientLightYellow = SCNLight()
-        ambientLightYellow.color = NSColor(hue: 0.135, saturation: 0.2, brightness: 1, alpha: 1)
-        ambientLightYellow.intensity = 500
-        ambientLightNodeYellow.light = ambientLightYellow
-        ambientLightYellow.type = .omni
-        
-        let ambientLightNodeRed = SCNNode()
-        ambientLightNodeRed.position = SCNVector3(x: 25, y: 10, z: 10)
-        let ambientLightRed = SCNLight()
-        ambientLightRed.color = NSColor(hue: 0, saturation: 0.2, brightness: 1, alpha: 1)
-        ambientLightRed.intensity = 500
-        ambientLightNodeRed.light = ambientLightRed
-        ambientLightRed.type = .omni
-        
-        rootNode.addChildNode(ambientLightNodeYellow)
-        rootNode.addChildNode(ambientLightNodeRed)
-        
-        self.background.contents = NSColor.black
-        
-        
-        
-        //initally run
-        //create initial map
+        //INITIALLY RUN
         charachterMap = makeInitialMap()
-        //calculate emotions
-        calculateNewHappiness(fullMap: true)
+        assignNewMap()
     }
     
-//    @objc func calculateEmotions() {
-//        DispatchQueue.global(qos: .background).async {
-//            self.calculateNewHappiness()
-//        }
-//    }
+    @objc func calculateEmotions() {
+        DispatchQueue.global(qos: .background).async {
+            self.calculateNewHappiness()
+        }
+    }
     
     func makeInitialMap() -> [[BlockCharachter?]] {
         //make nil filled array
         var map: [[BlockCharachter?]] = []
-        for x in 0..<16 {
+        for x in 0..<Scene.fieldSize {
             map.append([])
-            for _ in 0..<16 {
+            for _ in 0..<Scene.fieldSize {
                 map[x].append(nil)
             }
         }
@@ -145,18 +128,14 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
             map[Int(round(charachter.node.position.z))][Int(round(charachter.node.position.x))] = charachter
         }
         
-        
         return map
     }
     
-    func calculateNewHappiness(fullMap: Bool) {
-        if fullMap  {
-            
-        }
+    func calculateNewHappiness() {
         var updatedCharachterMap = charachterMap
         
-        for y in 0..<16 {
-            for x in 0..<16 {
+        for y in 0..<Scene.fieldSize {
+            for x in 0..<Scene.fieldSize {
                 //if reference charachter is not nil
                 if let refCharachter = charachterMap[y][x] {
                     var happinessTotal = 0.0
@@ -175,13 +154,13 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
                     }
                     
                     // right item
-                    if x + 1 < 16, let rightBlock = charachterMap[y][x + 1] {
+                    if x + 1 < Scene.fieldSize, let rightBlock = charachterMap[y][x + 1] {
                         happinessTotal += rightBlock.happinessLevel
                         contributorCount += 1
                     }
                     
                     // bottom item
-                    if y + 1 < 16, let bottomItem = charachterMap[y + 1][x] {
+                    if y + 1 < Scene.fieldSize, let bottomItem = charachterMap[y + 1][x] {
                         happinessTotal += bottomItem.happinessLevel
                         contributorCount += 1
                     }
@@ -209,10 +188,10 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
     }
     
     func assignNewMap() {
-        for y in 0..<16 {
-            for x in 0..<16 {
+        for y in 0..<Scene.fieldSize {
+            for x in 0..<Scene.fieldSize {
                 if let charachter = charachterMap[y][x] {
-                    let hue: CGFloat = CGFloat(charachter.happinessLevel) * 0.5
+                    let hue: CGFloat = CGFloat(charachter.happinessLevel) * 0.7
                     let newColor = NSColor(hue: hue, saturation: 1, brightness: 1, alpha: 1)
                     
                     DispatchQueue.main.async {
@@ -234,7 +213,7 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         
         camera.fStop = 0.01
         camera.apertureBladeCount = 5
-        camera.wantsDepthOfField = false
+        camera.wantsDepthOfField = true
         
         camera.bloomBlurRadius = 4
         camera.bloomIntensity = 0.3
@@ -264,7 +243,6 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         return cameraNode
     }
     
-    //idk what this is
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
@@ -276,8 +254,6 @@ class BlockCharachter {
     let lightNode = SCNNode()
     
     var happinessLevel = 0.0
-    
-    var isUserCharachter = false
     
     init(position: SCNVector3, happinessLevel: Double) {
         
@@ -294,11 +270,10 @@ class BlockCharachter {
             firstMaterial.diffuse.contents = NSColor(hue: 0, saturation: 0, brightness: 0, alpha: 1)
             
             firstMaterial.metalness.contents = NSColor(white: 0.8, alpha: 1)
-            //            firstMaterial.roughness.contents = NSColor(white: 0.3, alpha: 1)
             firstMaterial.roughness.contents = NSImage(imageLiteralResourceName: "normal.png")
-            firstMaterial.transparency = 0.98
+            
+            firstMaterial.transparency = 0.99
             firstMaterial.fresnelExponent = 3.2
-            //            firstMaterial.isDoubleSided = true
             firstMaterial.transparencyMode = .dualLayer
         }
         
@@ -316,12 +291,8 @@ class BlockCharachter {
     
     
     func changeColorTo(_ newColor: NSColor) {
-        SCNTransaction.begin()
-        SCNTransaction.animationDuration = 1
         self.node.geometry?.firstMaterial?.diffuse.contents = newColor
         self.lightNode.light?.color = newColor
-        SCNTransaction.commit()
-        
     }
 }
 
@@ -340,26 +311,14 @@ class BlockCharachter {
 class UserCharachter: BlockCharachter {
     override init(position: SCNVector3, happinessLevel: Double) {
         super.init(position: position, happinessLevel: happinessLevel)
-        isUserCharachter = true
     }
     
     func move(in direction: Direction) {
-        for row in vc.scene.charachterMap {
-            print(row)
-        }
-        print(" ")
-        print(" ")
-        print(" ")
-        
         let rotateAction: SCNAction
         let moveAction: SCNAction
         
-        //        var map = vc.scene.charachterMap
-        
         let currentZ = Int(round(node.position.z))
         let currentX = Int(round(node.position.x))
-        
-        //        let userCharachterElement = vc.scene.charachterMap[currentZ][currentX]
         
         if direction == .back {
             vc.scene.charachterMap[currentZ + 1][currentX] = self
@@ -385,12 +344,12 @@ class UserCharachter: BlockCharachter {
         
         let moveUpAction = SCNAction.customAction(duration: 0.2) { (node, time) in
             //-16.79375(x-0.2)^2+0.67175
-            let position = (-67.175*pow(time-0.1, 2)) + 0.67175
-            node.position.y = position
+            let height = ((-67.175*pow(time-0.1, 2)) + 0.67175)/2
+            node.position.y = height
         }
         //moveUpAction, rotateAction
-        self.node.runAction((SCNAction.group([moveAction]))) {
-            vc.scene.calculateNewHappiness(fullMap: false)
+        self.node.runAction((SCNAction.group([moveAction, moveUpAction]))) {
+            vc.scene.calculateEmotions()
         }
     }
 }
