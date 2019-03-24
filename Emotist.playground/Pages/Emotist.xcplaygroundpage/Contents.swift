@@ -10,51 +10,6 @@ enum Direction {
     case left
 }
 
-//create scene & add to playground liveview
-let vc = SceneViewController()
-PlaygroundPage.current.liveView = vc
-
-class SceneViewController: NSViewController {
-    public let scene = Scene()
-    
-    let leftArrow: UInt16 = 0x7B
-    let rightArrow: UInt16 = 0x7C
-    let downArrow: UInt16 = 0x7D
-    let upArrow: UInt16 = 0x7E
-    
-    override func loadView() {
-        view = NSView(frame: NSRect(x: 0, y: 0, width: 650, height: 650))
-        
-        self.view.addSubview(scene.sceneView)
-        
-        scene.sceneView.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            scene.sceneView.topAnchor.constraint(equalTo: self.view.topAnchor),
-            scene.sceneView.trailingAnchor.constraint(equalTo: self.view.trailingAnchor),
-            scene.sceneView.leadingAnchor.constraint(equalTo: self.view.leadingAnchor),
-            scene.sceneView.bottomAnchor.constraint(equalTo: self.view.bottomAnchor)
-            ])
-    }
-    
-    override func keyDown(with event: NSEvent) {
-        handleKeyPresses(event)
-    }
-    
-    func handleKeyPresses(_ event: NSEvent) {
-        if event.keyCode == downArrow {
-            scene.userCharachter.move(in: .back)
-        } else if event.keyCode == upArrow {
-            scene.userCharachter.move(in: .foward)
-        } else if event.keyCode == rightArrow {
-            scene.userCharachter.move(in: .right)
-        } else if event.keyCode == leftArrow {
-            scene.userCharachter.move(in: .left)
-        } else {
-            return
-        }
-    }
-}
-
 class Scene: SCNScene, SCNSceneRendererDelegate {
     var sceneView: SCNView = SCNView(frame: CGRect(x: 0, y: 0, width: 650, height: 650))
     
@@ -383,3 +338,48 @@ class UserCharachter: BlockCharachter {
         }
     }
 }
+
+class SceneViewController: NSViewController {
+    public let scene = Scene()
+    
+    let leftArrow: UInt16 = 0x7B
+    let rightArrow: UInt16 = 0x7C
+    let downArrow: UInt16 = 0x7D
+    let upArrow: UInt16 = 0x7E
+    
+    override func loadView() {
+        view = NSView(frame: NSRect(x: 0, y: 0, width: 650, height: 650))
+        
+        self.view.addSubview(scene.sceneView)
+        
+        scene.sceneView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            scene.sceneView.topAnchor.constraint(equalTo: self.view.topAnchor),
+            scene.sceneView.trailingAnchor.constraint(equalTo: self.view.trailingAnchor),
+            scene.sceneView.leadingAnchor.constraint(equalTo: self.view.leadingAnchor),
+            scene.sceneView.bottomAnchor.constraint(equalTo: self.view.bottomAnchor)
+            ])
+    }
+    
+    override func keyDown(with event: NSEvent) {
+        handleKeyPresses(event)
+    }
+    
+    func handleKeyPresses(_ event: NSEvent) {
+        if event.keyCode == downArrow {
+            scene.userCharachter.move(in: .back)
+        } else if event.keyCode == upArrow {
+            scene.userCharachter.move(in: .foward)
+        } else if event.keyCode == rightArrow {
+            scene.userCharachter.move(in: .right)
+        } else if event.keyCode == leftArrow {
+            scene.userCharachter.move(in: .left)
+        } else {
+            return
+        }
+    }
+}
+
+//create scene & add to playground liveview
+let vc = SceneViewController()
+PlaygroundPage.current.liveView = vc
