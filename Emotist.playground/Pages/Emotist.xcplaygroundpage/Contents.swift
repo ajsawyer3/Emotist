@@ -10,10 +10,55 @@ enum Direction {
     case left
 }
 
+//create scene & add to playground liveview
+let vc = SceneViewController()
+PlaygroundPage.current.liveView = vc
+
+class SceneViewController: NSViewController {
+    public let scene = Scene()
+    
+    let leftArrow: UInt16 = 0x7B
+    let rightArrow: UInt16 = 0x7C
+    let downArrow: UInt16 = 0x7D
+    let upArrow: UInt16 = 0x7E
+    
+    override func loadView() {
+        view = NSView(frame: NSRect(x: 0, y: 0, width: 650, height: 650))
+        
+        self.view.addSubview(scene.sceneView)
+        
+        scene.sceneView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            scene.sceneView.topAnchor.constraint(equalTo: self.view.topAnchor),
+            scene.sceneView.trailingAnchor.constraint(equalTo: self.view.trailingAnchor),
+            scene.sceneView.leadingAnchor.constraint(equalTo: self.view.leadingAnchor),
+            scene.sceneView.bottomAnchor.constraint(equalTo: self.view.bottomAnchor)
+            ])
+    }
+    
+    override func keyDown(with event: NSEvent) {
+        handleKeyPresses(event)
+    }
+    
+    func handleKeyPresses(_ event: NSEvent) {
+        if event.keyCode == downArrow {
+            scene.userCharachter.move(in: .back)
+        } else if event.keyCode == upArrow {
+            scene.userCharachter.move(in: .foward)
+        } else if event.keyCode == rightArrow {
+            scene.userCharachter.move(in: .right)
+        } else if event.keyCode == leftArrow {
+            scene.userCharachter.move(in: .left)
+        } else {
+            return
+        }
+    }
+}
+
 class Scene: SCNScene, SCNSceneRendererDelegate {
     var sceneView: SCNView = SCNView(frame: CGRect(x: 0, y: 0, width: 650, height: 650))
     
-    static public let fieldSize = 16
+    static public let fieldSize = 18
     
     public var charachters: [BlockCharachter] = []
     public var charachterMap: [[BlockCharachter?]] = []
@@ -36,20 +81,18 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         let ambientLightNodeYellow = SCNNode()
         ambientLightNodeYellow.position = SCNVector3(x: 10, y: 10, z: -5)
         let ambientLightYellow = SCNLight()
-        ambientLightYellow.color = NSColor(hue: 0.135, saturation: 0.2, brightness: 1, alpha: 1)
+        ambientLightYellow.color = NSColor(hue: 0.135, saturation: 0.5, brightness: 1, alpha: 1)
         ambientLightYellow.intensity = 500
         ambientLightNodeYellow.light = ambientLightYellow
         ambientLightYellow.type = .omni
-        ambientLightYellow.attenuationEndDistance = 10
         
         let ambientLightNodeRed = SCNNode()
         ambientLightNodeRed.position = SCNVector3(x: 25, y: 10, z: 10)
         let ambientLightRed = SCNLight()
-        ambientLightRed.color = NSColor(hue: 0, saturation: 0.2, brightness: 1, alpha: 1)
+        ambientLightRed.color = NSColor(hue: 0, saturation: 0.5, brightness: 1, alpha: 1)
         ambientLightRed.intensity = 500
         ambientLightNodeRed.light = ambientLightRed
         ambientLightRed.type = .omni
-        ambientLightRed.attenuationEndDistance = 10
         
         rootNode.addChildNode(ambientLightNodeYellow)
         rootNode.addChildNode(ambientLightNodeRed)
@@ -84,8 +127,7 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         
         
         //Other Charachters
-        for x in 0...30 {
-            
+        for x in 0...35 {
             var uniquePoint = CGPoint(x: -1, y: -1)
             while previousLocations.contains(uniquePoint) || uniquePoint.x == -1 || (uniquePoint.x == 8 && uniquePoint.y == 8){
                 let randomX = Int.random(in: 0..<Scene.fieldSize)
@@ -191,7 +233,7 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         for y in 0..<Scene.fieldSize {
             for x in 0..<Scene.fieldSize {
                 if let charachter = charachterMap[y][x] {
-                    let hue: CGFloat = CGFloat(charachter.happinessLevel) * 0.7
+                    let hue: CGFloat = CGFloat(charachter.happinessLevel) * 0.3
                     let newColor = NSColor(hue: hue, saturation: 1, brightness: 1, alpha: 1)
                     
                     DispatchQueue.main.async {
@@ -248,6 +290,7 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
     }
 }
 
+
 class BlockCharachter {
     var node: SCNNode
     
@@ -297,44 +340,31 @@ class BlockCharachter {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
 class UserCharachter: BlockCharachter {
     override init(position: SCNVector3, happinessLevel: Double) {
         super.init(position: position, happinessLevel: happinessLevel)
     }
     
     func move(in direction: Direction) {
-        let rotateAction: SCNAction
         let moveAction: SCNAction
         
         let currentZ = Int(round(node.position.z))
         let currentX = Int(round(node.position.x))
         
-        if direction == .back {
+        if direction == .back && (currentZ + 1 < Scene.fieldSize && vc.scene.charachterMap[currentZ + 1][currentX] == nil) {
             vc.scene.charachterMap[currentZ + 1][currentX] = self
-            rotateAction = SCNAction.rotateBy(x: 1.5708*2, y: 0, z: 0, duration: 0.2)
             moveAction = SCNAction.moveBy(x: 0, y: 0, z: 1, duration: 0.3)
-        } else if direction == .foward {
+            
+        } else if direction == .foward && (currentZ - 1 >= 0 && vc.scene.charachterMap[currentZ - 1][currentX] == nil) {
             vc.scene.charachterMap[currentZ - 1][currentX] = self
-            rotateAction = SCNAction.rotateBy(x: -1.5708*2, y: 0, z: 0, duration: 0.2)
             moveAction = SCNAction.moveBy(x: 0, y: 0, z: -1, duration: 0.3)
-        } else if direction == .right {
+            
+        } else if direction == .right && (currentX + 1 < Scene.fieldSize && vc.scene.charachterMap[currentZ][currentX + 1] == nil) {
             vc.scene.charachterMap[currentZ][currentX + 1] = self
-            rotateAction = SCNAction.rotateBy(x: 0, y: 0, z: 1.5708*2, duration: 0.2)
             moveAction = SCNAction.moveBy(x: 1, y: 0, z: 0, duration: 0.3)
-        } else if direction == .left {
+            
+        } else if direction == .left && (currentX - 1 >= 0 && vc.scene.charachterMap[currentZ][currentX - 1] == nil){
             vc.scene.charachterMap[currentZ][currentX - 1] = self
-            rotateAction = SCNAction.rotateBy(x: 0, y: 0, z: -1.5708*2, duration: 0.2)
             moveAction = SCNAction.moveBy(x: -1, y: 0, z: 0 , duration: 0.3)
         } else {
             return
@@ -343,88 +373,13 @@ class UserCharachter: BlockCharachter {
         vc.scene.charachterMap[currentZ][currentX] = nil
         
         let moveUpAction = SCNAction.customAction(duration: 0.2) { (node, time) in
-            //-16.79375(x-0.2)^2+0.67175
-            let height = ((-67.175*pow(time-0.1, 2)) + 0.67175)/2
+            //(-16.79375(x-0.2)^2+0.67175)/3
+            let height = ((-67.175*pow(time-0.1, 2)) + 0.67175)/3
             node.position.y = height
         }
-        //moveUpAction, rotateAction
+        
         self.node.runAction((SCNAction.group([moveAction, moveUpAction]))) {
             vc.scene.calculateEmotions()
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class SceneViewController: NSViewController {
-    public let scene = Scene()
-    
-    //    var timer: Timer?
-    
-    let leftArrow: UInt16 = 0x7B
-    let rightArrow: UInt16 = 0x7C
-    let downArrow: UInt16 = 0x7D
-    let upArrow: UInt16 = 0x7E
-    
-    override func loadView() {
-        view = NSView(frame: NSRect(x: 0, y: 0, width: 650, height: 650))
-        
-        self.view.addSubview(scene.sceneView)
-        
-        scene.sceneView.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            scene.sceneView.topAnchor.constraint(equalTo: self.view.topAnchor),
-            scene.sceneView.trailingAnchor.constraint(equalTo: self.view.trailingAnchor),
-            scene.sceneView.leadingAnchor.constraint(equalTo: self.view.leadingAnchor),
-            scene.sceneView.bottomAnchor.constraint(equalTo: self.view.bottomAnchor)
-            ])
-    }
-    
-    override func keyDown(with event: NSEvent) {
-        handleKeyPresses(event)
-    }
-    
-    override func keyUp(with event: NSEvent) {
-        //        handleKeyPresses(event)
-    }
-    
-    func handleKeyPresses(_ event: NSEvent) {
-        if event.keyCode == downArrow {
-            scene.userCharachter.move(in: .back)
-        } else if event.keyCode == upArrow {
-            scene.userCharachter.move(in: .foward)
-        } else if event.keyCode == rightArrow {
-            scene.userCharachter.move(in: .right)
-        } else if event.keyCode == leftArrow {
-            scene.userCharachter.move(in: .left)
-        } else {
-            return
-        }
-        
-        //        if self.timer != nil {
-        //            self.timer?.invalidate()
-        //            self.timer = Timer.scheduledTimer(timeInterval: 1, target: scene.self, selector: #selector(scene.calculateEmotions), userInfo: nil, repeats: false)
-        //            //is nil and is running
-        //        } else {
-        //            self.timer = Timer.scheduledTimer(timeInterval: 1, target: scene.self, selector: #selector(scene.calculateEmotions), userInfo: nil, repeats: false)
-        //        }
-    }
-}
-
-//create scene & add to playground liveview
-let vc = SceneViewController()
-PlaygroundPage.current.liveView = vc
