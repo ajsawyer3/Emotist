@@ -129,47 +129,76 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         initialColorSet()
     }
     
-    var previouslyCalculatedCharachters: [BlockCharachter] = []
-    
-    func calculateEmotions(_ charachters: [BlockCharachter]) {
-//        DispatchQueue.main.async {
-            if charachters.count != 0 {
-                for charachter in charachters {
-                    if !self.previouslyCalculatedCharachters.contains(charachter) {
-                        self.previouslyCalculatedCharachters.append(charachter)
-                        self.calculateEmotions(self.calculateHappinessFor(refCharachter: charachter))
-                    }
-                }
-            // finished becuase there is no more to calculate for
-            } else {
-                print("PCC: \(self.previouslyCalculatedCharachters)")
-                for charachter in self.previouslyCalculatedCharachters {
-                    let hue: CGFloat = CGFloat(charachter.happinessLevel)
-                    let newColor = NSColor(hue: hue, saturation: 1, brightness: 1, alpha: 1)
-                    
-//                    DispatchQueue.main.async {
-//                        charachter.changeColorTo(newColor)
-//                    }
-                }
-                
-                self.previouslyCalculatedCharachters = []
+    func calculateEmotions() {
+        
+            //find all blocks that the user effects
+            self.getSurroundingBlocks(for: self.userCharachter)
+            print("uec: \(userEffectedCharachters)")
+        
+            //calculate happiness for each of the user effected blocks
+            for charachter in self.userEffectedCharachters {
+                self.calculateHappinessFor(refCharachter: charachter)
             }
-//            else {
-//                self.previouslyCalculatedCharachters.append(self.userCharachter)
-//                self.calculateEmotions(self.calculateHappinessFor(refCharachter: self.userCharachter))
-//            }
-//        }
+            
+            //update view with new values
+            for charachter in self.userEffectedCharachters {
+                let hue: CGFloat = CGFloat(charachter.happinessLevel) * 0.5
+                let newColor = NSColor(hue: hue, saturation: 1, brightness: 1, alpha: 1)
+                
+                    DispatchQueue.main.async {
+                        charachter.changeColorTo(newColor)
+                    }
+                
+            }
+        
+            userEffectedCharachters.removeAll()
+        
     }
     
-    func calculateHappinessFor(refCharachter: BlockCharachter) -> [BlockCharachter] {
-        var effectedCharachters: [BlockCharachter] = []
-        debugPrint("effected c: \(effectedCharachters)")
+    var userEffectedCharachters: [BlockCharachter] = []
+    
+    func getSurroundingBlocks(for charachter: BlockCharachter) {
+        
+        let y = Int(round(charachter.node.position.z))
+        let x = Int(round(charachter.node.position.x))
+        
+        // top item
+        if y - 1 >= 0, let topBlock = charachterMap[y-1][x] {
+            if !userEffectedCharachters.contains(topBlock) {
+                userEffectedCharachters.append(topBlock)
+                getSurroundingBlocks(for: topBlock)
+            }
+        }
+        
+        // left item
+        if x - 1 >= 0, let leftBlock = charachterMap[y][x - 1] {
+            if !userEffectedCharachters.contains(leftBlock) {
+                userEffectedCharachters.append(leftBlock)
+                getSurroundingBlocks(for: leftBlock)
+            }
+        }
+        
+        // right item
+        if x + 1 <= 16, let rightBlock = charachterMap[y][x + 1] {
+            if !userEffectedCharachters.contains(rightBlock) {
+                userEffectedCharachters.append(rightBlock)
+                getSurroundingBlocks(for: rightBlock)
+            }
+        }
+        
+        // bottom item
+        if y + 1 <= 16, let bottomBlock = charachterMap[y + 1][x] {
+            if !userEffectedCharachters.contains(bottomBlock) {
+                userEffectedCharachters.append(bottomBlock)
+                getSurroundingBlocks(for: bottomBlock)
+            }
+        }
+    }
+    
+    func calculateHappinessFor(refCharachter: BlockCharachter) {
+        
         let y = Int(round(refCharachter.node.position.z))
         let x = Int(round(refCharachter.node.position.x))
-        
-        if refCharachter is UserCharachter {
-            print("\(y, x)")
-        }
         
         //if reference charachter is not nil
         if refCharachter != nil {
@@ -180,32 +209,24 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
             if y - 1 >= 0, let topBlock = charachterMap[y-1][x] {
                 happinessTotal += topBlock.happinessLevel
                 contributorCount += 1
-                
-                effectedCharachters.append(topBlock)
             }
             
             // left item
             if x - 1 >= 0, let leftBlock = charachterMap[y][x - 1] {
                 happinessTotal += leftBlock.happinessLevel
                 contributorCount += 1
-                
-                effectedCharachters.append(leftBlock)
             }
             
             // right item
             if x + 1 <= 16, let rightBlock = charachterMap[y][x + 1] {
                 happinessTotal += rightBlock.happinessLevel
                 contributorCount += 1
-                
-                effectedCharachters.append(rightBlock)
             }
             
             // bottom item
             if y + 1 <= 16, let bottomBlock = charachterMap[y + 1][x] {
                 happinessTotal += bottomBlock.happinessLevel
                 contributorCount += 1
-                
-                effectedCharachters.append(bottomBlock)
             }
             
             
@@ -223,9 +244,10 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
                 refCharachter.happinessLevel = (referenceCharachterPortion + secondaryCharachtersPortion)
             }
         }
-        debugPrint("effected c: \(effectedCharachters)")
-        return effectedCharachters
     }
+    
+    
+    
     
     func makeInitialMap() -> [[BlockCharachter?]] {
         //make nil filled array
@@ -356,11 +378,11 @@ class BlockCharachter {
     
     
     func changeColorTo(_ newColor: NSColor) {
-        SCNTransaction.begin()
-        SCNTransaction.animationDuration = 1
-        self.node.geometry?.firstMaterial?.diffuse.contents = newColor
-        self.lightNode.light?.color = newColor
-        SCNTransaction.commit()
+            SCNTransaction.begin()
+            SCNTransaction.animationDuration = 1
+            self.node.geometry?.firstMaterial?.diffuse.contents = newColor
+//            self.lightNode.light?.color = newColor
+            SCNTransaction.commit()
         
     }
 }
@@ -438,8 +460,10 @@ class UserCharachter: BlockCharachter {
         }
         //moveUpAction, rotateAction
         self.node.runAction((SCNAction.group([moveAction]))) {
-            DispatchQueue.global(qos: .background).async {
-                vc.scene.calculateEmotions([self])
+//            DispatchQueue.global(qos: .userInteractive).async {
+            DispatchQueue.global(qos: .default).async {
+//            DispatchQueue.main.async {
+                vc.scene.calculateEmotions()
             }
         }
     }
