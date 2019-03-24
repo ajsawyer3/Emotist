@@ -120,6 +120,7 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         //create initial map
         charachterMap = makeInitialMap()
         //calculate emotions
+        calculateEmotions()
     }
     
     @objc func calculateEmotions() {
