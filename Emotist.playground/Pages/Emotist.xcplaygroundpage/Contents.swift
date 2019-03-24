@@ -16,6 +16,8 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
     public var charachters: [BlockCharachter] = []
     public var charachterMap: [[BlockCharachter?]] = []
     
+    static public let fieldSize = 16
+    
     let userCharachter = UserCharachter(position: SCNVector3(x: 8, y: 0, z: 8), happinessLevel: 0)
     
     override init() {
@@ -56,12 +58,11 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         
         //create all other charachters in random locations
         for x in 0...40 {
-            let fieldSize = 19
             
             var uniquePoint = CGPoint(x: -1, y: -1)
             while previousLocations.contains(uniquePoint) || uniquePoint.x == -1 || (uniquePoint.x == 8 && uniquePoint.y == 8){
-                let randomX = Int.random(in: 1...fieldSize)
-                let randomZ = Int.random(in: 1...fieldSize)
+                let randomX = Int.random(in: 0..<Scene.fieldSize)
+                let randomZ = Int.random(in: 0..<Scene.fieldSize)
                 uniquePoint = CGPoint(x: randomX, y: randomZ)
             }
             
@@ -132,9 +133,9 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
     func makeInitialMap() -> [[BlockCharachter?]] {
         //make nil filled array
         var map: [[BlockCharachter?]] = []
-        for x in 0...19 {
+        for x in 0..<Scene.fieldSize {
             map.append([])
-            for _ in 0...19 {
+            for _ in 0..<Scene.fieldSize {
                 map[x].append(nil)
             }
         }
@@ -151,8 +152,8 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
     func calculateNewHappiness() {
         var updatedCharachterMap = charachterMap
         
-        for y in 0...19 {
-            for x in 0...19 {
+        for y in 0..<Scene.fieldSize {
+            for x in 0..<Scene.fieldSize {
                 //if reference charachter is not nil
                 if let refCharachter = charachterMap[y][x] {
                     var happinessTotal = 0.0
@@ -171,13 +172,13 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
                     }
                     
                     // right item
-                    if x + 1 <= 19, let rightBlock = charachterMap[y][x + 1] {
+                    if x + 1 < Scene.fieldSize, let rightBlock = charachterMap[y][x + 1] {
                         happinessTotal += rightBlock.happinessLevel
                         contributorCount += 1
                     }
                     
                     // bottom item
-                    if y + 1 <= 19, let bottomItem = charachterMap[y + 1][x] {
+                    if y + 1 < Scene.fieldSize, let bottomItem = charachterMap[y + 1][x] {
                         happinessTotal += bottomItem.happinessLevel
                         contributorCount += 1
                     }
@@ -205,8 +206,8 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
     }
     
     func assignNewMap() {
-        for y in 0...19 {
-            for x in 0...19 {
+        for y in 0..<Scene.fieldSize {
+            for x in 0..<Scene.fieldSize {
                 if let charachter = charachterMap[y][x] {
                     let hue: CGFloat = CGFloat(charachter.happinessLevel) * 0.5
                     let newColor = NSColor(hue: hue, saturation: 1, brightness: 1, alpha: 1)
