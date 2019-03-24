@@ -11,10 +11,6 @@ enum Direction {
 }
 
 class Scene: SCNScene, SCNSceneRendererDelegate {
-    
-    
-    
-    
     var sceneView: SCNView = SCNView(frame: CGRect(x: 0, y: 0, width: 650, height: 650))
     
     public var charachters: [BlockCharachter] = []
@@ -139,40 +135,47 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
     
     func calculateEmotions() {
         //find all blocks that the user effects
+        
+        let startTime = Date()
         self.getSurroundingBlocks(for: self.userCharachter)
+        let elapsed = Date().timeIntervalSince(startTime)
+//        debugPrint("elapsed: \(elapsed)")
         print("uec: \(self.userEffectedCharachters)")
         
         //calculate happiness for each of the user effected blocks
-        for charachter in self.userEffectedCharachters {
-            self.calculateHappinessFor(refCharachter: charachter)
-        }
+//        for charachter in self.userEffectedCharachters {
+//            self.calculateHappinessFor(refCharachter: charachter)
+//        }
         
         
         
         //update view with new values
-        for charachter in userEffectedCharachters {
-            let hue: CGFloat = CGFloat(charachter.happinessLevel) * 0.5
-            let newColor = NSColor(hue: hue, saturation: 1, brightness: 1, alpha: 1)
-            charachter.changeColorTo(newColor)
-        }
+//        for charachter in userEffectedCharachters {
+//            let hue: CGFloat = CGFloat(charachter.happinessLevel) * 0.5
+//            let newColor = NSColor(hue: hue, saturation: 1, brightness: 1, alpha: 1)
+//            charachter.changeColorTo(newColor)
+//        }
+        self.userEffectedCharachters.removeAll()
         
         
     }
-    
-    
     
     func getSurroundingBlocks(for charachter: BlockCharachter) {
         
         let y = Int(round(charachter.node.position.z))
         let x = Int(round(charachter.node.position.x))
         
+        
         // top item
+        let startTime = Date()
         if y - 1 >= 0, let topBlock = charachterMap[y-1][x] {
             if !userEffectedCharachters.contains(topBlock) {
                 userEffectedCharachters.append(topBlock)
                 getSurroundingBlocks(for: topBlock)
             }
         }
+        let elapsed = Date().timeIntervalSince(startTime)
+        debugPrint("top item elapsed: \(elapsed)")
         
         // left item
         if x - 1 >= 0, let leftBlock = charachterMap[y][x - 1] {
@@ -201,52 +204,50 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
     
     func calculateHappinessFor(refCharachter: BlockCharachter) {
         
-        let y = Int(round(refCharachter.node.position.z))
+        let z = Int(round(refCharachter.node.position.z))
         let x = Int(round(refCharachter.node.position.x))
         
         //if reference charachter is not nil
-        if refCharachter != nil {
-            var happinessTotal = 0.0
-            var contributorCount = 0.0
+        var happinessTotal = 0.0
+        var contributorCount = 0.0
+        
+        // top item
+        if z - 1 >= 0, let topBlock = charachterMap[z-1][x] {
+            happinessTotal += topBlock.happinessLevel
+            contributorCount += 1
+        }
+        
+        // left item
+        if x - 1 >= 0, let leftBlock = charachterMap[z][x - 1] {
+            happinessTotal += leftBlock.happinessLevel
+            contributorCount += 1
+        }
+        
+        // right item
+        if x + 1 <= fieldSize, let rightBlock = charachterMap[z][x + 1] {
+            happinessTotal += rightBlock.happinessLevel
+            contributorCount += 1
+        }
+        
+        // bottom item
+        if z + 1 <= fieldSize, let bottomBlock = charachterMap[z + 1][x] {
+            happinessTotal += bottomBlock.happinessLevel
+            contributorCount += 1
+        }
+        
+        
+        if contributorCount != 0 {
+            var referenceCharachterInfluence = 0.5, secondaryCharachterInfluence = 0.5
             
-            // top item
-            if y - 1 >= 0, let topBlock = charachterMap[y-1][x] {
-                happinessTotal += topBlock.happinessLevel
-                contributorCount += 1
+            if refCharachter is UserCharachter {
+                referenceCharachterInfluence = 0.7
+                secondaryCharachterInfluence = 0.3
             }
             
-            // left item
-            if x - 1 >= 0, let leftBlock = charachterMap[y][x - 1] {
-                happinessTotal += leftBlock.happinessLevel
-                contributorCount += 1
-            }
+            let referenceCharachterPortion = refCharachter.happinessLevel * referenceCharachterInfluence
+            let secondaryCharachtersPortion = (happinessTotal / contributorCount) * secondaryCharachterInfluence
             
-            // right item
-            if x + 1 <= fieldSize, let rightBlock = charachterMap[y][x + 1] {
-                happinessTotal += rightBlock.happinessLevel
-                contributorCount += 1
-            }
-            
-            // bottom item
-            if y + 1 <= fieldSize, let bottomBlock = charachterMap[y + 1][x] {
-                happinessTotal += bottomBlock.happinessLevel
-                contributorCount += 1
-            }
-            
-            
-            if contributorCount != 0 {
-                var referenceCharachterInfluence = 0.5, secondaryCharachterInfluence = 0.5
-                
-                if refCharachter is UserCharachter {
-                    referenceCharachterInfluence = 0.8
-                    secondaryCharachterInfluence = 0.2
-                }
-                
-                let referenceCharachterPortion = refCharachter.happinessLevel * referenceCharachterInfluence
-                let secondaryCharachtersPortion = (happinessTotal / contributorCount) * secondaryCharachterInfluence
-                
-                refCharachter.happinessLevel = (referenceCharachterPortion + secondaryCharachtersPortion)
-            }
+            refCharachter.happinessLevel = (referenceCharachterPortion + secondaryCharachtersPortion)
         }
     }
     
@@ -425,50 +426,76 @@ extension BlockCharachter: Equatable {
 
 
 class UserCharachter: BlockCharachter {
+    var currentZ: Int = 0
+    var currentX: Int = 0
+    
     override init(position: SCNVector3, happinessLevel: Double) {
         super.init(position: position, happinessLevel: happinessLevel)
+//
+        currentZ = Int(round(position.z))
+        currentX = Int(round(position.x))
     }
     
     func move(in direction: Direction) {
-        let rotateAction: SCNAction
-        let moveAction: SCNAction
         
-        let currentZ = Int(round(node.position.z))
-        let currentX = Int(round(node.position.x))
+        currentZ = Int(round(node.position.z))
+        currentX = Int(round(node.position.x))
         
-        if direction == .back {
-            vc.scene.charachterMap[currentZ + 1][currentX] = self
-            rotateAction = SCNAction.rotateBy(x: 1.5708*2, y: 0, z: 0, duration: 0.2)
-            moveAction = SCNAction.moveBy(x: 0, y: 0, z: 1, duration: 0.3)
-        } else if direction == .foward {
-            vc.scene.charachterMap[currentZ - 1][currentX] = self
-            rotateAction = SCNAction.rotateBy(x: -1.5708*2, y: 0, z: 0, duration: 0.2)
-            moveAction = SCNAction.moveBy(x: 0, y: 0, z: -1, duration: 0.3)
-        } else if direction == .right {
-            vc.scene.charachterMap[currentZ][currentX + 1] = self
-            rotateAction = SCNAction.rotateBy(x: 0, y: 0, z: 1.5708*2, duration: 0.2)
-            moveAction = SCNAction.moveBy(x: 1, y: 0, z: 0, duration: 0.3)
-        } else if direction == .left {
-            vc.scene.charachterMap[currentZ][currentX - 1] = self
-            rotateAction = SCNAction.rotateBy(x: 0, y: 0, z: -1.5708*2, duration: 0.2)
-            moveAction = SCNAction.moveBy(x: -1, y: 0, z: 0 , duration: 0.3)
-        } else {
-            return
-        }
+//        if canMove(in: direction) {
+            let rotateAction: SCNAction
+            let moveAction: SCNAction
         
-        vc.scene.charachterMap[currentZ][currentX] = nil
-        
-        let moveUpAction = SCNAction.customAction(duration: 0.2) { (node, time) in
-            //-16.79375(x-0.2)^2+0.67175
-            let position = (-67.175*pow(time-0.1, 2)) + 0.67175
-            node.position.y = position
-        }
-        //moveUpAction, rotateAction
-        self.node.runAction((SCNAction.group([moveAction]))) {
-            DispatchQueue.main.async {
-                vc.scene.calculateEmotions()
+            //BACK
+            if direction == .back && (currentZ + 1 <= vc.scene.fieldSize && vc.scene.charachterMap[currentZ + 1][currentX] == nil) {
+                
+                vc.scene.charachterMap[currentZ + 1][currentX] = self
+                rotateAction = SCNAction.rotateBy(x: 1.5708*2, y: 0, z: 0, duration: 0.2)
+                moveAction = SCNAction.moveBy(x: 0, y: 0, z: 1, duration: 0.3)
+                
+                
+            //FOWARD
+            } else if direction == .foward && (currentZ - 1 > 0 && vc.scene.charachterMap[currentZ - 1][currentX] == nil) {
+                
+                vc.scene.charachterMap[currentZ - 1][currentX] = self
+                rotateAction = SCNAction.rotateBy(x: -1.5708*2, y: 0, z: 0, duration: 0.2)
+                moveAction = SCNAction.moveBy(x: 0, y: 0, z: -1, duration: 0.3)
+                
+                
+                
+            //RIGHT
+            } else if direction == .right && (currentX + 1 <= vc.scene.fieldSize && vc.scene.charachterMap[currentZ][currentX + 1] == nil)  {
+                
+                vc.scene.charachterMap[currentZ][currentX + 1] = self
+                rotateAction = SCNAction.rotateBy(x: 0, y: 0, z: 1.5708*2, duration: 0.2)
+                moveAction = SCNAction.moveBy(x: 1, y: 0, z: 0, duration: 0.3)
+                
+                
+            //LEFT
+            } else if direction == .left && (currentX - 1 >= 0 && vc.scene.charachterMap[currentZ][currentX - 1] == nil) {
+                vc.scene.charachterMap[currentZ][currentX - 1] = self
+                rotateAction = SCNAction.rotateBy(x: 0, y: 0, z: -1.5708*2, duration: 0.2)
+                moveAction = SCNAction.moveBy(x: -1, y: 0, z: 0 , duration: 0.3)
+                
+                
+            } else {
+                return
             }
-        }
+            
+            vc.scene.charachterMap[currentZ][currentX] = nil
+            
+            let moveUpAction = SCNAction.customAction(duration: 0.2) { (node, time) in
+                //-16.79375(x-0.2)^2+0.67175
+                let position = (-67.175*pow(time-0.1, 2)) + 0.67175
+                node.position.y = position
+            }
+            //moveUpAction, rotateAction
+            self.node.runAction((SCNAction.group([moveAction]))) {
+//                DispatchQueue.main.async {
+                DispatchQueue.global(qos: .userInteractive).async {
+                    vc.scene.calculateEmotions()
+                }
+            }
+//        }
     }
 }
 
