@@ -11,12 +11,15 @@ enum Direction {
 }
 
 class Scene: SCNScene, SCNSceneRendererDelegate {
+    
     var sceneView: SCNView = SCNView(frame: CGRect(x: 0, y: 0, width: 650, height: 650))
     
     public var charachters: [BlockCharachter] = []
     public var charachterMap: [[BlockCharachter?]] = []
     
     let userCharachter = UserCharachter(position: SCNVector3(x: 8, y: 0, z: 8), happinessLevel: 0)
+    
+    var userEffectedCharachters: [BlockCharachter] = []
     
     override init() {
         super.init()
@@ -129,33 +132,26 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         initialColorSet()
     }
     
+    
+    
     func calculateEmotions() {
+        //find all blocks that the user effects
+        self.getSurroundingBlocks(for: self.userCharachter)
+        print("uec: \(self.userEffectedCharachters)")
+    
+        //calculate happiness for each of the user effected blocks
+        for charachter in self.userEffectedCharachters {
+            self.calculateHappinessFor(refCharachter: charachter)
+        }
         
-            //find all blocks that the user effects
-            self.getSurroundingBlocks(for: self.userCharachter)
-            print("uec: \(userEffectedCharachters)")
         
-            //calculate happiness for each of the user effected blocks
-            for charachter in self.userEffectedCharachters {
-                self.calculateHappinessFor(refCharachter: charachter)
-            }
-            
-            //update view with new values
-            for charachter in self.userEffectedCharachters {
-                let hue: CGFloat = CGFloat(charachter.happinessLevel) * 0.5
-                let newColor = NSColor(hue: hue, saturation: 1, brightness: 1, alpha: 1)
-                
-                    DispatchQueue.main.async {
-                        charachter.changeColorTo(newColor)
-                    }
-                
-            }
         
-            userEffectedCharachters.removeAll()
-        
+        userEffectedCharachters.removeAll()
+        //update view with new values
+//        shouldUpdateColors = true
     }
     
-    var userEffectedCharachters: [BlockCharachter] = []
+    
     
     func getSurroundingBlocks(for charachter: BlockCharachter) {
         
@@ -269,15 +265,22 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
     }
     
     func initialColorSet() {
+        
+//        SCNTransaction.begin()
+//        SCNTransaction.animationDuration = 3
+//        userCharachter.node.geometry?.firstMaterial?.diffuse.contents = NSColor.green
+//        SCNTransaction.commit()
+        
         for y in 0...16 {
             for x in 0...16 {
                 if let charachter = charachterMap[y][x] {
                     let hue: CGFloat = CGFloat(charachter.happinessLevel) * 0.5
                     let newColor = NSColor(hue: hue, saturation: 1, brightness: 1, alpha: 1)
                     
-                    DispatchQueue.main.async {
-                        charachter.changeColorTo(newColor)
-                    }
+//                        updateColors()
+//                    DispatchQueue.main.async {
+//                        charachter.changeColorTo(newColor)
+//                    }
                 }
             }
         }
@@ -336,6 +339,18 @@ class BlockCharachter {
     let lightNode = SCNNode()
     
     var happinessLevel = 0.0
+//        didSet {
+//            let hue: CGFloat = CGFloat(happinessLevel) * 0.5
+//            let newColor = NSColor(hue: hue, saturation: 1, brightness: 1, alpha: 1)
+//
+//            SCNTransaction.begin()
+//            SCNTransaction.animationDuration = 1.5
+//
+//            node.geometry?.firstMaterial?.diffuse.contents = newColor.cgColor
+//            //            self.lightNode.light?.color = newColor
+//            SCNTransaction.commit()
+//        }
+    
     
     var isUserCharachter = false
     
@@ -377,14 +392,10 @@ class BlockCharachter {
     }
     
     
-    func changeColorTo(_ newColor: NSColor) {
-            SCNTransaction.begin()
-            SCNTransaction.animationDuration = 1
-            self.node.geometry?.firstMaterial?.diffuse.contents = newColor
-//            self.lightNode.light?.color = newColor
-            SCNTransaction.commit()
-        
-    }
+//    func changeColorTo(_ newColor: NSColor) {
+//
+//
+//    }
 }
 
 extension BlockCharachter: Equatable {
@@ -460,9 +471,21 @@ class UserCharachter: BlockCharachter {
         }
         //moveUpAction, rotateAction
         self.node.runAction((SCNAction.group([moveAction]))) {
-//            DispatchQueue.global(qos: .userInteractive).async {
-            DispatchQueue.global(qos: .default).async {
-//            DispatchQueue.main.async {
+//            DispatchQueue.global(qos: .background).async {
+            
+                //        self.userEffectedCharachters.removeAll()
+                //        for charachter in self.userEffectedCharachters {
+                //            SCNTransaction.begin()
+                //            SCNTransaction.animationDuration = 1.5
+                //
+                //            let hue: CGFloat = CGFloat(charachter.happinessLevel) * 0.5
+                //            let newColor = NSColor(hue: hue, saturation: 1, brightness: 1, alpha: 1)
+                //
+                //            charachter.node.geometry?.firstMaterial?.diffuse.contents = newColor.cgColor
+                //            //            self.lightNode.light?.color = newColor
+                //            SCNTransaction.commit()
+            
+            DispatchQueue.main.async {
                 vc.scene.calculateEmotions()
             }
         }
@@ -488,8 +511,6 @@ class UserCharachter: BlockCharachter {
 class SceneViewController: NSViewController {
     public let scene = Scene()
     
-    //    var timer: Timer?
-    
     let leftArrow: UInt16 = 0x7B
     let rightArrow: UInt16 = 0x7C
     let downArrow: UInt16 = 0x7D
@@ -513,10 +534,6 @@ class SceneViewController: NSViewController {
         handleKeyPresses(event)
     }
     
-    override func keyUp(with event: NSEvent) {
-        //        handleKeyPresses(event)
-    }
-    
     func handleKeyPresses(_ event: NSEvent) {
         if event.keyCode == downArrow {
             scene.userCharachter.move(in: .back)
@@ -529,14 +546,6 @@ class SceneViewController: NSViewController {
         } else {
             return
         }
-        
-        //        if self.timer != nil {
-        //            self.timer?.invalidate()
-        //            self.timer = Timer.scheduledTimer(timeInterval: 1, target: scene.self, selector: #selector(scene.calculateEmotions), userInfo: nil, repeats: false)
-        //            //is nil and is running
-        //        } else {
-        //            self.timer = Timer.scheduledTimer(timeInterval: 1, target: scene.self, selector: #selector(scene.calculateEmotions), userInfo: nil, repeats: false)
-        //        }
     }
 }
 
