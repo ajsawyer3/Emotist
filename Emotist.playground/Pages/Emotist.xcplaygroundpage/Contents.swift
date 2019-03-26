@@ -11,7 +11,7 @@ enum Direction {
 }
 
 class Scene: SCNScene, SCNSceneRendererDelegate {
-    var sceneView: SCNView = SCNView(frame: CGRect(x: 0, y: 0, width: 650, height: 650))
+    var sceneView: SCNView = SCNView(frame: CGRect(x: 0, y: 0, width: 850, height: 650))
     
     static public let fieldSize = 18
     
@@ -26,7 +26,7 @@ class Scene: SCNScene, SCNSceneRendererDelegate {
         sceneView.delegate = self
         sceneView.scene = self
         sceneView.allowsCameraControl = false
-        sceneView.showsStatistics = true
+        sceneView.showsStatistics = false
         
         //CAMERA & LIGHTING
         let cameraNode = createCameraNode(following: userCharachter.node)
@@ -348,7 +348,7 @@ class SceneViewController: NSViewController {
     let upArrow: UInt16 = 0x7E
     
     override func loadView() {
-        view = NSView(frame: NSRect(x: 0, y: 0, width: 650, height: 650))
+        view = NSView(frame: NSRect(x: 0, y: 0, width: 850, height: 650))
         
         self.view.addSubview(scene.sceneView)
         
