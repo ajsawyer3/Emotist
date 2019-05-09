@@ -11,7 +11,7 @@ enum Direction {
 }
 
 class Scene: SCNScene, SCNSceneRendererDelegate {
-    var sceneView: SCNView = SCNView(frame: CGRect(x: 0, y: 0, width: 850, height: 650))
+    var sceneView: SCNView = SCNView(frame: CGRect(x: 0, y: 0, width: 650, height: 650))
     
     static public let fieldSize = 18
     
@@ -328,9 +328,14 @@ class UserCharachter: BlockCharachter {
         vc.scene.charachterMap[currentZ][currentX] = nil
         
         let moveUpAction = SCNAction.customAction(duration: 0.2) { (node, time) in
-            //(-16.79375(x-0.2)^2+0.67175)/3
-            let height = ((-67.175*pow(time-0.1, 2)) + 0.67175)/3
-            node.position.y = height
+            let height = sqrt(0.01-pow((time-0.1), 2))*(time*15)
+            if height >= 0 {
+                print(height)
+                node.position.y = height
+            } else {
+                node.position.y = 0
+            }
+            
         }
         
         self.node.runAction((SCNAction.group([moveAction, moveUpAction]))) {
@@ -348,7 +353,7 @@ class SceneViewController: NSViewController {
     let upArrow: UInt16 = 0x7E
     
     override func loadView() {
-        view = NSView(frame: NSRect(x: 0, y: 0, width: 850, height: 650))
+        view = NSView(frame: NSRect(x: 0, y: 0, width: 650, height: 650))
         
         self.view.addSubview(scene.sceneView)
         
