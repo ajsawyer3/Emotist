@@ -328,8 +328,11 @@ class UserCharachter: BlockCharachter {
         vc.scene.charachterMap[currentZ][currentX] = nil
         
         let moveUpAction = SCNAction.customAction(duration: 0.2) { (node, time) in
-            let height = sqrt(0.01-pow((time-0.1), 2))*(time*15)
+            var height = sqrt(0.01-pow((time-0.1), 2))*(time*15)
             if height >= 0 {
+                if height == 1 {
+                    
+                }
                 print(height)
                 node.position.y = height
             } else {
